@@ -1,0 +1,6 @@
+<?php
+
+use Calendar\LivewireCalendar\Tests\TestCase;
+
+uses(TestCase::class)->in(__DIR__.'/tests');
+
