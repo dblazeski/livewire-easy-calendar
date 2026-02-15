@@ -246,6 +246,26 @@ composer test
 
 Browser tests require Playwright (installed automatically via `pestphp/pest-plugin-browser`).
 
+## Documentation Site (Workbench)
+
+This repository includes a local documentation site powered by Orchestra Testbench Workbench.
+
+- Serve docs locally on port 3010:
+
+```bash
+composer docs
+```
+
+Open `http://127.0.0.1:3010/docs`.
+
+Docs live under `workbench/resources/views/docs/` and include runnable examples backed by a committed SQLite fixture database at `workbench/database/demo.sqlite`.
+
+If you change the docs Tailwind source at `workbench/resources/css/docs.css`, rebuild the compiled docs CSS:
+
+```bash
+npm run docs:css
+```
+
 ## Requirements
 
 - PHP 8.3+

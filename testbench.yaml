@@ -1,0 +1,23 @@
+dont-discover:
+  - '*'
+
+providers:
+  - Livewire\LivewireServiceProvider
+  - Calendar\LivewireCalendar\LivewireCalendarServiceProvider
+  - Workbench\App\Providers\WorkbenchServiceProvider
+
+workbench:
+  start: /docs
+  welcome: false
+  discovers:
+    web: true
+    api: false
+    commands: false
+    factories: true
+    views: true
+
+  sync:
+    - from: resources/dist
+      to: public/vendor/livewire-calendar
+    - from: workbench/public/docs-assets
+      to: public/docs-assets

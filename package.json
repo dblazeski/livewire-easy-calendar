@@ -4,10 +4,13 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "docs:css": "npx @tailwindcss/cli -i ./workbench/resources/css/docs.css -o ./workbench/public/docs-assets/docs.css",
     "playwright:install": "playwright install"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "latest",
     "luxon": "latest",
+    "tailwindcss": "latest",
     "rrule": "latest",
     "playwright": "latest",
     "typescript": "^5.0.0",
