@@ -53,7 +53,7 @@
     </button>
 
     <main class="docs-content min-h-dvh lg:ml-72">
-        <div class="mx-auto max-w-4xl px-6 pb-16 pt-20 lg:px-12 lg:pt-12">
+        <div class="mx-auto w-[96%] px-6 pb-16 pt-20 lg:px-0 lg:pt-12">
             @yield('content')
         </div>
     </main>

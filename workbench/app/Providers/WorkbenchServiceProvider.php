@@ -24,6 +24,7 @@ class WorkbenchServiceProvider extends ServiceProvider
 
         $this->app['config']->set('database.default', 'sqlite');
         $this->app['config']->set('database.connections.sqlite.database', $databasePath);
+        $this->app['config']->set('cache.default', 'array');
     }
 
     private function demoDatabasePath(): string
