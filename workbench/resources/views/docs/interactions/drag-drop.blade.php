@@ -7,7 +7,7 @@
         <h1>Drag and Drop</h1>
 
         <p>
-            Drag and drop is supported for timed events in time grid views.
+            Drag and drop is supported for timed events in month, list, time grid, and resource timeline views.
             Override <code>onEventDrop(string $eventId, string $newStart, string $newEnd)</code>.
         </p>
 

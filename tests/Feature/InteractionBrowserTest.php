@@ -1,6 +1,7 @@
 <?php
 
 use Calendar\LivewireCalendar\CalendarEvent;
+use Calendar\LivewireCalendar\CalendarResource;
 use Calendar\LivewireCalendar\DateRange;
 use Calendar\LivewireCalendar\Livewire\LivewireCalendar;
 use Illuminate\Support\Carbon;
@@ -23,6 +24,12 @@ class InteractionTestCalendar extends LivewireCalendar
                 start: Carbon::parse($this->evt1Start),
                 end: Carbon::parse($this->evt1End),
             ),
+            new CalendarEvent(
+                id: 'int-evt-2',
+                title: 'Fixed Workshop',
+                start: Carbon::parse('2026-05-15T13:00:00+00:00'),
+                end: Carbon::parse('2026-05-15T14:00:00+00:00'),
+            ),
         ];
     }
 
@@ -42,8 +49,44 @@ class InteractionTestCalendar extends LivewireCalendar
     }
 }
 
+class ResourceTimelineInteractionTestCalendar extends LivewireCalendar
+{
+    public string $evt1Start = '2026-05-14T09:00:00+00:00';
+
+    public string $evt1End = '2026-05-14T10:00:00+00:00';
+
+    protected function resources(DateRange $range): array
+    {
+        return [
+            new CalendarResource(id: 'res-1', title: 'Room A'),
+        ];
+    }
+
+    protected function events(DateRange $range): array
+    {
+        return [
+            new CalendarEvent(
+                id: 'res-int-evt-1',
+                title: 'Movable Booking',
+                start: Carbon::parse($this->evt1Start),
+                end: Carbon::parse($this->evt1End),
+                extra: ['resourceId' => 'res-1'],
+            ),
+        ];
+    }
+
+    protected function onEventDrop(string $eventId, string $newStart, string $newEnd): void
+    {
+        if ($eventId === 'res-int-evt-1') {
+            $this->evt1Start = $newStart;
+            $this->evt1End = $newEnd;
+        }
+    }
+}
+
 beforeEach(function (): void {
     Livewire::component('interaction-test-calendar', InteractionTestCalendar::class);
+    Livewire::component('resource-timeline-interaction-test-calendar', ResourceTimelineInteractionTestCalendar::class);
 
     Route::get('/test-interactions', fn () => Blade::render(<<<'HTML'
         <html>
@@ -51,6 +94,36 @@ beforeEach(function (): void {
         <body>
             @livewireScripts
             <livewire:interaction-test-calendar view="timeGridWeek" initial-date="2026-05-14" first-day="0" today="2026-01-15" />
+        </body>
+        </html>
+    HTML))->middleware('web');
+
+    Route::get('/test-interactions-month', fn () => Blade::render(<<<'HTML'
+        <html>
+        <head>@livewireStyles</head>
+        <body>
+            @livewireScripts
+            <livewire:interaction-test-calendar view="month" initial-date="2026-05-01" first-day="0" today="2026-01-15" time-zone="UTC" />
+        </body>
+        </html>
+    HTML))->middleware('web');
+
+    Route::get('/test-interactions-list', fn () => Blade::render(<<<'HTML'
+        <html>
+        <head>@livewireStyles</head>
+        <body>
+            @livewireScripts
+            <livewire:interaction-test-calendar view="listWeek" initial-date="2026-05-14" first-day="0" today="2026-01-15" time-zone="UTC" />
+        </body>
+        </html>
+    HTML))->middleware('web');
+
+    Route::get('/test-interactions-resource-timeline', fn () => Blade::render(<<<'HTML'
+        <html>
+        <head>@livewireStyles</head>
+        <body>
+            @livewireScripts
+            <livewire:resource-timeline-interaction-test-calendar view="resourceTimelineDay" initial-date="2026-05-14" first-day="0" today="2026-01-15" time-zone="UTC" />
         </body>
         </html>
     HTML))->middleware('web');
@@ -154,4 +227,36 @@ it('resizes event to a new end time via resize handle', function (): void {
         )
         ->assertPresent('[data-testid="timed-event-int-evt-1-2026-05-14"]')
         ->assertAttribute('[data-testid="timed-event-int-evt-1-2026-05-14"]', 'data-end-min', '690');
+});
+
+it('moves event to a new day on drag and drop in month view', function (): void {
+    visit('/test-interactions-month')
+        ->assertPresent('[data-testid="month-event-int-evt-1-2026-05-14"]')
+        ->drag(
+            '[data-testid="month-event-int-evt-1-2026-05-14"]',
+            '[data-testid="day-cell-2026-05-15"]',
+        )
+        ->assertPresent('[data-testid="month-event-int-evt-1-2026-05-15"]');
+});
+
+it('moves event to a new day on drag and drop in list view', function (): void {
+    visit('/test-interactions-list')
+        ->assertPresent('[data-testid="list-event-int-evt-1"]')
+        ->assertPresent('[data-testid="list-day-2026-05-15"]')
+        ->drag(
+            '[data-testid="list-event-int-evt-1"]',
+            '[data-testid="list-day-2026-05-15"]',
+        )
+        ->assertPresent('[data-testid="list-day-2026-05-15"] [data-testid="list-event-int-evt-1"]');
+});
+
+it('moves resource timeline event to a new time on drag and drop', function (): void {
+    visit('/test-interactions-resource-timeline')
+        ->assertPresent('[data-testid="resource-event-res-int-evt-1-res-1"]')
+        ->assertAttribute('[data-testid="resource-event-res-int-evt-1-res-1"]', 'data-start-min', '540')
+        ->drag(
+            '[data-testid="resource-event-res-int-evt-1-res-1"]',
+            '[data-testid="resource-axis-tick-12:00"]',
+        )
+        ->assertAttribute('[data-testid="resource-event-res-int-evt-1-res-1"]', 'data-start-min', '720');
 });

@@ -44,7 +44,7 @@
         ['num' => '01', 'title' => 'Multiple Views', 'desc' => 'Month, week, day, list, year, and resource timeline.'],
         ['num' => '02', 'title' => 'Livewire Hooks', 'desc' => 'Fetch events/resources and handle interactions in PHP.'],
         ['num' => '03', 'title' => 'Recurrence', 'desc' => 'RRULE support with exclusion dates (EXDATE).'],
-        ['num' => '04', 'title' => 'Interactions', 'desc' => 'Click, select, drag-and-drop, and resize in time grid views.'],
+        ['num' => '04', 'title' => 'Interactions', 'desc' => 'Click/select/resize in time grid; drag-and-drop across views.'],
         ['num' => '05', 'title' => 'Resources', 'desc' => 'Assign events to rooms, people, or equipment.'],
         ['num' => '06', 'title' => 'No FullCalendar', 'desc' => 'Custom rendering and interactions; no UI calendar dependency.'],
     ];
@@ -100,7 +100,10 @@ class MyCalendar extends LivewireCalendar
 
         <h2>Live Preview</h2>
 
-        <p>This preview uses a committed SQLite fixture database from the package workbench.</p>
+        <p>
+            This preview uses a committed SQLite fixture database from the package workbench.
+            Use the view switcher in the toolbar to explore all views, then click, drag, resize, and select time slots.
+        </p>
 
         <div class="not-prose overflow-hidden rounded-lg border border-docs-border bg-white p-4">
             <livewire:docs-demo-calendar

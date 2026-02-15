@@ -52,7 +52,7 @@ const rootContexts = new WeakMap<HTMLElement, RootContext>();
 
 let pendingDrag: {
     eventEl: HTMLElement; eventId: string; startIso: string; endIso: string;
-    durationMin: number; root: HTMLElement;
+    durationMin: number; root: HTMLElement; allDay: boolean;
 } | null = null;
 
 let pendingResize: {
@@ -67,6 +67,11 @@ let pendingSelect: {
 
 let interactionMoved = false;
 let suppressNextClick = false;
+
+let dragDropTarget: HTMLElement | null = null;
+let dragGhost: HTMLElement | null = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
 
 function nextRenderToken(root: HTMLElement): number {
     const next = (renderTokens.get(root) ?? 0) + 1;
@@ -91,6 +96,17 @@ function getCalendarTimeZone(root: HTMLElement): string {
 
 function isDateOnlyIso(value: string): boolean {
     return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function animateIn(elements: HTMLElement[]): void {
+    for (let i = 0; i < elements.length; i++) {
+        elements[i].style.setProperty('--lec-anim-index', String(i));
+    }
+    requestAnimationFrame(() => {
+        for (const el of elements) {
+            el.classList.add('lec-animate-in');
+        }
+    });
 }
 
 function parseIsoInZone(iso: string, zone: string): DateTime {
@@ -275,6 +291,9 @@ function loadEvents(root: HTMLElement, grid: HTMLElement, gridStart: DateTime, t
 }
 
 function renderEvents(grid: HTMLElement, events: CalendarEventData[], zone: string): void {
+    grid.querySelectorAll('.lec-event').forEach((el) => el.remove());
+
+    const created: HTMLElement[] = [];
     for (const event of events) {
         const eventDate = parseIsoInZone(event.start, zone).toFormat('yyyy-MM-dd');
         const cell = grid.querySelector(`[data-date="${eventDate}"]`);
@@ -282,10 +301,20 @@ function renderEvents(grid: HTMLElement, events: CalendarEventData[], zone: stri
 
         const eventEl = document.createElement('div');
         eventEl.className = 'lec-event';
+        eventEl.setAttribute('data-testid', `month-event-${event.id}-${eventDate}`);
         eventEl.setAttribute('data-event-id', event.id);
+        eventEl.setAttribute('data-event-start', event.start);
+        eventEl.setAttribute('data-event-end', event.end);
+
+        if (event.allDay === true) {
+            eventEl.setAttribute('data-all-day', 'true');
+        }
+
         eventEl.textContent = event.title;
         cell.appendChild(eventEl);
+        created.push(eventEl);
     }
+    animateIn(created);
 }
 
 function renderMonthView(root: HTMLElement, monthStart: DateTime, firstDay: number, token: number): void {
@@ -393,6 +422,9 @@ function renderResourceTimelineDayEvents(
     dayEnd: DateTime,
     zone: string,
 ): void {
+    timeline.querySelectorAll('.lec-resource-timeline-event').forEach((el) => el.remove());
+
+    const created: HTMLElement[] = [];
     for (const event of events) {
         const resourceIdRaw = (event as { resourceId?: unknown }).resourceId;
         if (resourceIdRaw === null || resourceIdRaw === undefined) continue;
@@ -421,6 +453,12 @@ function renderResourceTimelineDayEvents(
         eventEl.setAttribute('data-start-min', String(startMin));
         eventEl.setAttribute('data-end-min', String(endMin));
         eventEl.setAttribute('data-event-id', event.id);
+        eventEl.setAttribute('data-event-start', event.start);
+        eventEl.setAttribute('data-event-end', event.end);
+
+        if (event.allDay === true) {
+            eventEl.setAttribute('data-all-day', 'true');
+        }
         eventEl.textContent = event.title;
 
         const leftPercent = (startMin / 1440) * 100;
@@ -433,7 +471,9 @@ function renderResourceTimelineDayEvents(
         eventEl.style.bottom = '0';
 
         lane.appendChild(eventEl);
+        created.push(eventEl);
     }
+    animateIn(created);
 }
 
 function renderResourceTimelineDayContents(
@@ -460,6 +500,8 @@ function renderResourceTimelineDayContents(
 
         const tick = document.createElement('div');
         tick.className = 'lec-resource-timeline-axis-tick';
+        tick.setAttribute('data-testid', `resource-axis-tick-${timeStr}`);
+        tick.setAttribute('data-minute', String(minutes));
         if (mins === 0) {
             tick.textContent = timeStr;
         }
@@ -495,67 +537,12 @@ function renderResourceTimelineDayContents(
     }
 }
 
-function computeOverlapColumns(segments: TimedSegment[]): Map<TimedSegment, { col: number; colCount: number }> {
-    const result = new Map<TimedSegment, { col: number; colCount: number }>();
-    if (segments.length === 0) return result;
-
-    // Sort by startMin asc, then duration desc (longer first), then id for determinism
-    const sorted = [...segments].sort((a, b) => {
-        if (a.startMin !== b.startMin) return a.startMin - b.startMin;
-        const aDur = a.endMin - a.startMin;
-        const bDur = b.endMin - b.startMin;
-        if (aDur !== bDur) return bDur - aDur;
-        return a.event.id.localeCompare(b.event.id);
-    });
-
-    // Build overlap groups and assign columns
-    let groupStart = 0;
-    let groupEnd = sorted[0].endMin;
-
-    for (let i = 1; i <= sorted.length; i++) {
-        if (i < sorted.length && sorted[i].startMin < groupEnd) {
-            groupEnd = Math.max(groupEnd, sorted[i].endMin);
-            continue;
-        }
-
-        // Process group [groupStart, i)
-        const group = sorted.slice(groupStart, i);
-        const colEnds: number[] = [];
-
-        for (const seg of group) {
-            let assigned = -1;
-            for (let c = 0; c < colEnds.length; c++) {
-                if (seg.startMin >= colEnds[c]) {
-                    assigned = c;
-                    break;
-                }
-            }
-            if (assigned === -1) {
-                assigned = colEnds.length;
-                colEnds.push(0);
-            }
-            colEnds[assigned] = seg.endMin;
-            result.set(seg, { col: assigned, colCount: 0 });
-        }
-
-        const colCount = colEnds.length;
-        for (const seg of group) {
-            result.get(seg)!.colCount = colCount;
-        }
-
-        if (i < sorted.length) {
-            groupStart = i;
-            groupEnd = sorted[i].endMin;
-        }
-    }
-
-    return result;
-}
-
 function renderTimeGridEvents(root: HTMLElement, eventsLayer: HTMLElement, alldayRow: HTMLElement, events: CalendarEventData[], days: DateTime[], zone: string): void {
     // Idempotency: clear previous events
     eventsLayer.querySelectorAll('.lec-timed-event').forEach(el => el.remove());
     alldayRow.querySelectorAll('.lec-allday-event').forEach(el => el.remove());
+
+    const created: HTMLElement[] = [];
 
     // Separate all-day vs timed events
     const allDayEvents: CalendarEventData[] = [];
@@ -590,6 +577,7 @@ function renderTimeGridEvents(root: HTMLElement, eventsLayer: HTMLElement, allda
             eventEl.setAttribute('data-date', dateStr);
             eventEl.textContent = event.title;
             cell.appendChild(eventEl);
+            created.push(eventEl);
         }
     }
 
@@ -622,15 +610,12 @@ function renderTimeGridEvents(root: HTMLElement, eventsLayer: HTMLElement, allda
         }
     }
 
-    // Render timed events with overlap layout
+    // Render timed events (full-width, z-stacked when overlapping)
     for (const [dateStr, segments] of daySegmentsMap) {
-        const layout = computeOverlapColumns(segments);
         const dayBody = eventsLayer.querySelector(`[data-date="${dateStr}"]`);
         if (!dayBody) continue;
 
         for (const seg of segments) {
-            const { col, colCount } = layout.get(seg)!;
-
             const eventEl = document.createElement('div');
             eventEl.className = 'lec-timed-event';
             eventEl.setAttribute('data-testid', `timed-event-${seg.event.id}-${dateStr}`);
@@ -638,8 +623,8 @@ function renderTimeGridEvents(root: HTMLElement, eventsLayer: HTMLElement, allda
             eventEl.setAttribute('data-date', dateStr);
             eventEl.setAttribute('data-start-min', String(seg.startMin));
             eventEl.setAttribute('data-end-min', String(seg.endMin));
-            eventEl.setAttribute('data-col', String(col));
-            eventEl.setAttribute('data-col-count', String(colCount));
+            eventEl.setAttribute('data-col', '0');
+            eventEl.setAttribute('data-col-count', '1');
             eventEl.setAttribute('data-event-start', seg.event.start);
             eventEl.setAttribute('data-event-end', seg.event.end);
 
@@ -655,17 +640,74 @@ function renderTimeGridEvents(root: HTMLElement, eventsLayer: HTMLElement, allda
 
             const topPercent = (seg.startMin / 1440) * 100;
             const heightPercent = ((seg.endMin - seg.startMin) / 1440) * 100;
-            const leftPercent = (col / colCount) * 100;
-            const widthPercent = (1 / colCount) * 100;
 
             eventEl.style.top = `${topPercent}%`;
             eventEl.style.height = `${heightPercent}%`;
-            eventEl.style.left = `${leftPercent}%`;
-            eventEl.style.width = `${widthPercent}%`;
+            eventEl.style.left = '2px';
+            eventEl.style.right = '2px';
+            eventEl.style.width = 'auto';
 
             dayBody.appendChild(eventEl);
+            created.push(eventEl);
         }
     }
+
+    animateIn(created);
+}
+
+function renderTimeGridEventsWithFlip(root: HTMLElement, eventsLayer: HTMLElement, alldayRow: HTMLElement, events: CalendarEventData[], days: DateTime[], zone: string): void {
+    // FIRST: snapshot old positions keyed by eventId-dateStr
+    const oldRects = new Map<string, DOMRect>();
+    eventsLayer.querySelectorAll<HTMLElement>('.lec-timed-event').forEach(el => {
+        const eventId = el.getAttribute('data-event-id');
+        const dateStr = el.getAttribute('data-date');
+        if (eventId && dateStr) {
+            oldRects.set(`${eventId}-${dateStr}`, el.getBoundingClientRect());
+        }
+    });
+
+    // Re-render (removes old, creates new)
+    renderTimeGridEvents(root, eventsLayer, alldayRow, events, days, zone);
+
+    // LAST: FLIP animate elements that existed before
+    const newElements = eventsLayer.querySelectorAll<HTMLElement>('.lec-timed-event');
+    const unmatchedElements: HTMLElement[] = [];
+
+    newElements.forEach(el => {
+        const eventId = el.getAttribute('data-event-id');
+        const dateStr = el.getAttribute('data-date');
+        const key = `${eventId}-${dateStr}`;
+        const oldRect = oldRects.get(key);
+
+        if (oldRect) {
+            const newRect = el.getBoundingClientRect();
+            const deltaX = oldRect.left - newRect.left;
+            const deltaY = oldRect.top - newRect.top;
+
+            if (deltaX !== 0 || deltaY !== 0) {
+                el.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                el.style.transition = 'none';
+
+                // Remove the animateIn class that renderTimeGridEvents added
+                el.classList.remove('lec-animate-in');
+
+                requestAnimationFrame(() => {
+                    el.classList.add('lec-flip-animate');
+                    el.style.transform = '';
+                    el.style.transition = '';
+
+                    el.addEventListener('transitionend', () => {
+                        el.classList.remove('lec-flip-animate');
+                    }, { once: true });
+                });
+            }
+        } else {
+            unmatchedElements.push(el);
+        }
+    });
+
+    // New events (no match in old set) get animateIn instead
+    // They already got animateIn from renderTimeGridEvents, so nothing extra needed
 }
 
 function renderTimeGrid(root: HTMLElement, days: DateTime[]): { eventsLayer: HTMLElement; alldayRow: HTMLElement } {
@@ -821,6 +863,8 @@ function loadListEvents(root: HTMLElement, listContainer: HTMLElement, weekStart
 function renderListEvents(listContainer: HTMLElement, events: CalendarEventData[], weekStart: DateTime, zone: string): void {
     listContainer.innerHTML = '';
 
+    const created: HTMLElement[] = [];
+
     const sorted = [...events].sort((a, b) => {
         const aStart = parseIsoInZone(a.start, zone);
         const bStart = parseIsoInZone(b.start, zone);
@@ -864,6 +908,7 @@ function renderListEvents(listContainer: HTMLElement, events: CalendarEventData[
         const dayGroup = document.createElement('div');
         dayGroup.className = 'lec-list-day-group';
         dayGroup.setAttribute('data-testid', `list-day-${dateStr}`);
+        dayGroup.setAttribute('data-date', dateStr);
 
         const dayHeading = document.createElement('div');
         dayHeading.className = 'lec-list-day-heading';
@@ -881,6 +926,12 @@ function renderListEvents(listContainer: HTMLElement, events: CalendarEventData[
             eventRow.setAttribute('data-testid', `list-event-${event.id}`);
             eventRow.setAttribute('data-event-id', event.id);
             eventRow.setAttribute('data-date', dateStr);
+            eventRow.setAttribute('data-event-start', event.start);
+            eventRow.setAttribute('data-event-end', event.end);
+
+            if (event.allDay === true) {
+                eventRow.setAttribute('data-all-day', 'true');
+            }
 
             const eventTime = document.createElement('span');
             eventTime.className = 'lec-list-event-time';
@@ -900,10 +951,13 @@ function renderListEvents(listContainer: HTMLElement, events: CalendarEventData[
             eventRow.appendChild(eventTitle);
 
             dayGroup.appendChild(eventRow);
+            created.push(eventRow);
         }
 
         listContainer.appendChild(dayGroup);
     }
+
+    animateIn(created);
 }
 
 function renderListWeek(root: HTMLElement, weekStart: DateTime, firstDay: number, token: number): void {
@@ -1018,11 +1072,23 @@ function renderTimeGridDay(root: HTMLElement, dayDate: DateTime, token: number):
     loadTimeGridEvents(root, eventsLayer, alldayRow, [dayDate], token);
 }
 
-function renderCalendar(root: HTMLElement, anchorDate: DateTime, firstDay: number, view: string): void {
+function renderCalendar(root: HTMLElement, anchorDate: DateTime, firstDay: number, view: string, direction: 'next' | 'prev' | 'none' = 'none'): void {
     const token = nextRenderToken(root);
 
-    while (root.firstChild) {
-        root.removeChild(root.firstChild);
+    // Animate exit of old content
+    let exitWrapper: HTMLElement | null = null;
+    if (direction !== 'none' && root.children.length > 0) {
+        exitWrapper = document.createElement('div');
+        exitWrapper.className = `lec-view-exit-${direction}`;
+        while (root.firstChild) {
+            exitWrapper.appendChild(root.firstChild);
+        }
+        root.appendChild(exitWrapper);
+        exitWrapper.addEventListener('animationend', () => exitWrapper!.remove());
+    } else {
+        while (root.firstChild) {
+            root.removeChild(root.firstChild);
+        }
     }
 
     const zone = getCalendarTimeZone(root);
@@ -1037,65 +1103,118 @@ function renderCalendar(root: HTMLElement, anchorDate: DateTime, firstDay: numbe
     btnPrev.className = 'lec-toolbar-btn';
     btnPrev.setAttribute('data-testid', 'btn-prev');
     btnPrev.setAttribute('type', 'button');
+    btnPrev.setAttribute('aria-label', 'Previous');
     btnPrev.textContent = '\u2039';
 
     const btnToday = document.createElement('button');
     btnToday.className = 'lec-toolbar-btn';
     btnToday.setAttribute('data-testid', 'btn-today');
     btnToday.setAttribute('type', 'button');
+    btnToday.setAttribute('aria-label', 'Today');
     btnToday.textContent = 'Today';
 
     const btnNext = document.createElement('button');
     btnNext.className = 'lec-toolbar-btn';
     btnNext.setAttribute('data-testid', 'btn-next');
     btnNext.setAttribute('type', 'button');
+    btnNext.setAttribute('aria-label', 'Next');
     btnNext.textContent = '\u203A';
 
     if (view === 'timeGridDay' || view === 'resourceTimelineDay') {
         btnPrev.addEventListener('click', () => {
-            renderCalendar(root, anchorDate.minus({ days: 1 }), firstDay, view);
+            renderCalendar(root, anchorDate.minus({ days: 1 }), firstDay, view, 'prev');
         });
         btnNext.addEventListener('click', () => {
-            renderCalendar(root, anchorDate.plus({ days: 1 }), firstDay, view);
+            renderCalendar(root, anchorDate.plus({ days: 1 }), firstDay, view, 'next');
         });
         btnToday.addEventListener('click', () => {
             renderCalendar(root, todayDate.startOf('day'), firstDay, view);
         });
     } else if (view === 'timeGridWeek' || view === 'listWeek') {
         btnPrev.addEventListener('click', () => {
-            renderCalendar(root, anchorDate.minus({ days: 7 }), firstDay, view);
+            renderCalendar(root, anchorDate.minus({ days: 7 }), firstDay, view, 'prev');
         });
         btnNext.addEventListener('click', () => {
-            renderCalendar(root, anchorDate.plus({ days: 7 }), firstDay, view);
+            renderCalendar(root, anchorDate.plus({ days: 7 }), firstDay, view, 'next');
         });
         btnToday.addEventListener('click', () => {
             renderCalendar(root, computeWeekStart(todayDate, firstDay), firstDay, view);
         });
     } else if (view === 'multiMonthYear') {
         btnPrev.addEventListener('click', () => {
-            renderCalendar(root, anchorDate.minus({ years: 1 }), firstDay, view);
+            renderCalendar(root, anchorDate.minus({ years: 1 }), firstDay, view, 'prev');
         });
         btnNext.addEventListener('click', () => {
-            renderCalendar(root, anchorDate.plus({ years: 1 }), firstDay, view);
+            renderCalendar(root, anchorDate.plus({ years: 1 }), firstDay, view, 'next');
         });
         btnToday.addEventListener('click', () => {
             renderCalendar(root, todayDate.startOf('year'), firstDay, view);
         });
     } else {
         btnPrev.addEventListener('click', () => {
-            renderCalendar(root, anchorDate.minus({ months: 1 }), firstDay, view);
+            renderCalendar(root, anchorDate.minus({ months: 1 }), firstDay, view, 'prev');
         });
         btnNext.addEventListener('click', () => {
-            renderCalendar(root, anchorDate.plus({ months: 1 }), firstDay, view);
+            renderCalendar(root, anchorDate.plus({ months: 1 }), firstDay, view, 'next');
         });
         btnToday.addEventListener('click', () => {
             renderCalendar(root, todayDate.startOf('month'), firstDay, view);
         });
     }
 
-    toolbar.appendChild(btnPrev);
-    toolbar.appendChild(btnToday);
-    toolbar.appendChild(btnNext);
+    const nav = document.createElement('div');
+    nav.className = 'lec-toolbar-nav';
+    nav.setAttribute('data-testid', 'calendar-toolbar-nav');
+    nav.appendChild(btnPrev);
+    nav.appendChild(btnToday);
+    nav.appendChild(btnNext);
+    toolbar.appendChild(nav);
+
+    const viewSwitcher = document.createElement('div');
+    viewSwitcher.className = 'lec-view-switcher';
+    viewSwitcher.setAttribute('data-testid', 'view-switcher');
+    viewSwitcher.setAttribute('role', 'group');
+    viewSwitcher.setAttribute('aria-label', 'Calendar view');
+
+    const views: Array<{ key: string; label: string }> = [
+        { key: 'month', label: 'Month' },
+        { key: 'timeGridWeek', label: 'Week' },
+        { key: 'timeGridDay', label: 'Day' },
+        { key: 'listWeek', label: 'List' },
+        { key: 'multiMonthYear', label: 'Year' },
+        { key: 'resourceTimelineDay', label: 'Timeline' },
+    ];
+
+    for (const option of views) {
+        const btn = document.createElement('button');
+        btn.className = 'lec-view-switcher-btn' + (option.key === view ? ' lec-view-switcher-btn--active' : '');
+        btn.setAttribute('data-testid', `view-btn-${option.key}`);
+        btn.setAttribute('type', 'button');
+        btn.setAttribute('aria-pressed', option.key === view ? 'true' : 'false');
+        btn.textContent = option.label;
+
+        if (option.key !== view) {
+            btn.addEventListener('click', () => {
+                let nextAnchor = anchorDate;
+                if (option.key === 'timeGridDay' || option.key === 'resourceTimelineDay') {
+                    nextAnchor = anchorDate.startOf('day');
+                } else if (option.key === 'timeGridWeek' || option.key === 'listWeek') {
+                    nextAnchor = computeWeekStart(anchorDate, firstDay);
+                } else if (option.key === 'multiMonthYear') {
+                    nextAnchor = anchorDate.startOf('year');
+                } else {
+                    nextAnchor = anchorDate.startOf('month');
+                }
+
+                root.setAttribute('data-livewire-calendar-view', option.key);
+                renderCalendar(root, nextAnchor, firstDay, option.key);
+            });
+        }
+
+        viewSwitcher.appendChild(btn);
+    }
+
+    toolbar.appendChild(viewSwitcher);
     root.appendChild(toolbar);
 
     if (view === 'timeGridDay') {
@@ -1110,6 +1229,27 @@ function renderCalendar(root: HTMLElement, anchorDate: DateTime, firstDay: numbe
         renderMultiMonthYear(root, anchorDate, firstDay, token);
     } else {
         renderMonthView(root, anchorDate, firstDay, token);
+    }
+
+    // Wrap new content in enter animation wrapper
+    if (direction !== 'none') {
+        const enterWrapper = document.createElement('div');
+        enterWrapper.className = `lec-view-enter-${direction}`;
+
+        const children = Array.from(root.children);
+        for (const child of children) {
+            if (child !== exitWrapper) {
+                enterWrapper.appendChild(child);
+            }
+        }
+        root.appendChild(enterWrapper);
+
+        enterWrapper.addEventListener('animationend', () => {
+            while (enterWrapper.firstChild) {
+                root.insertBefore(enterWrapper.firstChild, enterWrapper);
+            }
+            enterWrapper.remove();
+        });
     }
 }
 
@@ -1187,6 +1327,7 @@ function startSelect(e: MouseEvent, slotCell: HTMLElement): void {
     selectionEl.style.right = '0';
 
     dayBody.appendChild(selectionEl);
+    requestAnimationFrame(() => selectionEl.classList.add('lec-animate-in'));
 
     pendingSelect = { startDate: dateStr, startMinute: minute, dayBody, selectionEl, root };
     interactionMoved = false;
@@ -1248,70 +1389,308 @@ function startDrag(e: MouseEvent, eventEl: HTMLElement): void {
 
     const zone = getCalendarTimeZone(root);
 
-    const startIso = eventEl.getAttribute('data-event-start') || '';
-    const endIso = eventEl.getAttribute('data-event-end') || '';
+    const startIso = eventEl.getAttribute('data-event-start');
+    const endIso = eventEl.getAttribute('data-event-end');
+    if (!startIso || !endIso) return;
+
+    const allDay = eventEl.getAttribute('data-all-day') === 'true';
+    if (allDay) return;
 
     const originalStart = parseIsoInZone(startIso, zone);
     const originalEnd = parseIsoInZone(endIso, zone);
+    if (!originalStart.isValid || !originalEnd.isValid) return;
     const durationMin = Math.round(originalEnd.diff(originalStart, 'minutes').minutes);
+
+    const rect = eventEl.getBoundingClientRect();
+    dragOffsetX = e.clientX - rect.left;
+    dragOffsetY = e.clientY - rect.top;
+
+    if (dragGhost) {
+        dragGhost.remove();
+        dragGhost = null;
+    }
+
+    if (dragDropTarget) {
+        dragDropTarget.classList.remove('lec-drop-target');
+        dragDropTarget = null;
+    }
 
     pendingDrag = {
         eventEl,
         eventId: eventEl.getAttribute('data-event-id') || '',
-        startIso, endIso, durationMin, root,
+        startIso, endIso, durationMin, root, allDay,
     };
     interactionMoved = false;
 }
 
-function handleDragMove(_e: MouseEvent): void {
+function handleDragMove(e: MouseEvent): void {
     if (!pendingDrag) return;
+
     if (!interactionMoved) {
         interactionMoved = true;
         pendingDrag.eventEl.classList.add('lec-event--dragging');
+
+        const titleEl = pendingDrag.eventEl.querySelector<HTMLElement>('.lec-timed-event-title, .lec-list-event-title');
+        const label = (titleEl?.textContent ?? pendingDrag.eventEl.textContent ?? '').trim();
+
+        const ghost = document.createElement('div');
+        ghost.className = 'lec-drag-ghost';
+        ghost.textContent = label;
+
+        const srcRect = pendingDrag.eventEl.getBoundingClientRect();
+        const width = Math.min(320, Math.max(140, srcRect.width));
+        ghost.style.width = `${width}px`;
+
+        ghost.style.left = `${e.clientX - dragOffsetX}px`;
+        ghost.style.top = `${e.clientY - dragOffsetY}px`;
+
+        document.body.appendChild(ghost);
+        dragGhost = ghost;
     }
+
+    if (dragGhost) {
+        dragGhost.style.left = `${e.clientX - dragOffsetX}px`;
+        dragGhost.style.top = `${e.clientY - dragOffsetY}px`;
+    }
+
+    highlightDropTarget(e);
+}
+
+function highlightDropTarget(e: MouseEvent): void {
+    if (!pendingDrag) return;
+
+    const root = pendingDrag.root;
+    const view = root.getAttribute('data-livewire-calendar-view') || 'month';
+
+    const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    let nextTarget: HTMLElement | null = null;
+
+    if (target) {
+        if (view === 'timeGridWeek' || view === 'timeGridDay') {
+            nextTarget = target.closest('.lec-slot-cell[data-date]') as HTMLElement;
+        } else if (view === 'month') {
+            nextTarget = target.closest('.lec-day-cell[data-date]') as HTMLElement;
+        } else if (view === 'listWeek') {
+            nextTarget = target.closest('.lec-list-day-group[data-date]') as HTMLElement;
+        } else if (view === 'resourceTimelineDay') {
+            nextTarget = (target.closest('.lec-resource-timeline-axis-tick[data-minute]')
+                || target.closest('.lec-resource-timeline-lane[data-resource-id]')) as HTMLElement;
+        }
+    }
+
+    if (nextTarget && !root.contains(nextTarget)) {
+        nextTarget = null;
+    }
+
+    if (dragDropTarget && dragDropTarget !== nextTarget) {
+        dragDropTarget.classList.remove('lec-drop-target');
+    }
+
+    if (nextTarget && dragDropTarget !== nextTarget) {
+        nextTarget.classList.add('lec-drop-target');
+    }
+
+    dragDropTarget = nextTarget;
 }
 
 function handleDragEnd(e: MouseEvent): void {
     if (!pendingDrag || !interactionMoved) return;
 
+    const root = pendingDrag.root;
+    const view = root.getAttribute('data-livewire-calendar-view') || 'month';
+
     const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
     if (!target) return;
-    const slotCell = target.closest('.lec-slot-cell[data-date]') as HTMLElement;
 
-    if (!slotCell) return;
+    if (view === 'timeGridWeek' || view === 'timeGridDay') {
+        const slotCell = target.closest('.lec-slot-cell[data-date]') as HTMLElement;
+        if (!slotCell) return;
 
-    const newDateStr = slotCell.getAttribute('data-date') || '';
-    const newMinute = parseInt(slotCell.getAttribute('data-minute') || '0', 10);
+        const newDateStr = slotCell.getAttribute('data-date') || '';
+        const newMinute = parseInt(slotCell.getAttribute('data-minute') || '0', 10);
 
-    const zone = getCalendarTimeZone(pendingDrag.root);
-    const newStart = DateTime.fromISO(newDateStr, { zone }).set({
-        hour: Math.floor(newMinute / 60),
-        minute: newMinute % 60,
-        second: 0, millisecond: 0,
-    });
-    const newEnd = newStart.plus({ minutes: pendingDrag.durationMin });
+        const zone = getCalendarTimeZone(root);
+        const newStart = DateTime.fromISO(newDateStr, { zone }).set({
+            hour: Math.floor(newMinute / 60),
+            minute: newMinute % 60,
+            second: 0, millisecond: 0,
+        });
+        const newEnd = newStart.plus({ minutes: pendingDrag.durationMin });
 
-    const newStartIso = newStart.toFormat("yyyy-MM-dd'T'HH:mm:ss");
-    const newEndIso = newEnd.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+        const newStartIso = newStart.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+        const newEndIso = newEnd.toFormat("yyyy-MM-dd'T'HH:mm:ss");
 
-    const root = pendingDrag.root;
-    const ctx = rootContexts.get(root);
-    if (!ctx) return;
+        const ctx = rootContexts.get(root);
+        if (!ctx) return;
 
-    const rangeStart = ctx.days[0].toFormat('yyyy-MM-dd');
-    const rangeEnd = ctx.days[ctx.days.length - 1].plus({ days: 1 }).toFormat('yyyy-MM-dd');
+        const rangeStart = ctx.days[0].toFormat('yyyy-MM-dd');
+        const rangeEnd = ctx.days[ctx.days.length - 1].plus({ days: 1 }).toFormat('yyyy-MM-dd');
 
-    const $wire = getWire(root);
-    if ($wire) {
-        const token = getRenderToken(root);
-        $wire.$call('eventDrop', pendingDrag.eventId, newStartIso, newEndIso, rangeStart, rangeEnd)
-            .then((result) => {
-                if (token !== getRenderToken(root)) return;
-                const rangeStartDt = ctx.days[0].setZone(zone).startOf('day');
-                const rangeEndDt = ctx.days[ctx.days.length - 1].setZone(zone).startOf('day').plus({ days: 1 });
-                const expanded = expandRecurringEvents(result as CalendarEventData[], rangeStartDt, rangeEndDt, zone);
-                renderTimeGridEvents(root, ctx.eventsLayer, ctx.alldayRow, expanded, ctx.days, zone);
-            });
+        const $wire = getWire(root);
+        if ($wire) {
+            const token = getRenderToken(root);
+            $wire.$call('eventDrop', pendingDrag.eventId, newStartIso, newEndIso, rangeStart, rangeEnd)
+                .then((result) => {
+                    if (token !== getRenderToken(root)) return;
+                    const rangeStartDt = ctx.days[0].setZone(zone).startOf('day');
+                    const rangeEndDt = ctx.days[ctx.days.length - 1].setZone(zone).startOf('day').plus({ days: 1 });
+                    const expanded = expandRecurringEvents(result as CalendarEventData[], rangeStartDt, rangeEndDt, zone);
+                    renderTimeGridEventsWithFlip(root, ctx.eventsLayer, ctx.alldayRow, expanded, ctx.days, zone);
+                });
+        }
+
+        return;
+    }
+
+    if (view === 'month') {
+        const dayCell = target.closest('.lec-day-cell[data-date]') as HTMLElement;
+        if (!dayCell) return;
+
+        const newDateStr = dayCell.getAttribute('data-date') || '';
+        if (newDateStr.length === 0) return;
+
+        const zone = getCalendarTimeZone(root);
+        const originalStart = parseIsoInZone(pendingDrag.startIso, zone);
+        if (!originalStart.isValid) return;
+
+        const newStart = DateTime.fromISO(newDateStr, { zone }).set({
+            hour: originalStart.hour,
+            minute: originalStart.minute,
+            second: originalStart.second,
+            millisecond: 0,
+        });
+        const newEnd = newStart.plus({ minutes: pendingDrag.durationMin });
+
+        const newStartIso = newStart.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+        const newEndIso = newEnd.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+        const grid = root.querySelector<HTMLElement>('[data-testid="month-grid"]');
+        if (!grid) return;
+
+        const firstCell = grid.querySelector<HTMLElement>('.lec-day-cell[data-date]');
+        const gridStartStr = firstCell?.getAttribute('data-date');
+        if (!gridStartStr) return;
+
+        const rangeStart = gridStartStr;
+        const rangeEnd = DateTime.fromISO(rangeStart, { zone }).plus({ days: TOTAL_CELLS }).toFormat('yyyy-MM-dd');
+
+        const $wire = getWire(root);
+        if ($wire) {
+            const token = getRenderToken(root);
+            $wire.$call('eventDrop', pendingDrag.eventId, newStartIso, newEndIso, rangeStart, rangeEnd)
+                .then((result) => {
+                    if (token !== getRenderToken(root)) return;
+                    const rangeStartDt = DateTime.fromISO(rangeStart, { zone }).startOf('day');
+                    const rangeEndDt = DateTime.fromISO(rangeEnd, { zone }).startOf('day');
+                    const expanded = expandRecurringEvents(result as CalendarEventData[], rangeStartDt, rangeEndDt, zone);
+                    renderEvents(grid, expanded, zone);
+                });
+        }
+
+        return;
+    }
+
+    if (view === 'listWeek') {
+        const dayGroup = target.closest('.lec-list-day-group[data-date]') as HTMLElement;
+        if (!dayGroup) return;
+
+        const newDateStr = dayGroup.getAttribute('data-date') || '';
+        if (newDateStr.length === 0) return;
+
+        const zone = getCalendarTimeZone(root);
+        const originalStart = parseIsoInZone(pendingDrag.startIso, zone);
+        if (!originalStart.isValid) return;
+
+        const newStart = DateTime.fromISO(newDateStr, { zone }).set({
+            hour: originalStart.hour,
+            minute: originalStart.minute,
+            second: originalStart.second,
+            millisecond: 0,
+        });
+        const newEnd = newStart.plus({ minutes: pendingDrag.durationMin });
+
+        const newStartIso = newStart.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+        const newEndIso = newEnd.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+        const listContainer = root.querySelector<HTMLElement>('[data-testid="list-view"]');
+        if (!listContainer) return;
+
+        const rangeStart = listContainer.getAttribute('data-range-start');
+        const rangeEnd = listContainer.getAttribute('data-range-end');
+        if (!rangeStart || !rangeEnd) return;
+
+        const weekStart = DateTime.fromISO(rangeStart, { zone });
+
+        const $wire = getWire(root);
+        if ($wire) {
+            const token = getRenderToken(root);
+            $wire.$call('eventDrop', pendingDrag.eventId, newStartIso, newEndIso, rangeStart, rangeEnd)
+                .then((result) => {
+                    if (token !== getRenderToken(root)) return;
+                    const rangeStartDt = DateTime.fromISO(rangeStart, { zone }).startOf('day');
+                    const rangeEndDt = DateTime.fromISO(rangeEnd, { zone }).startOf('day');
+                    const expanded = expandRecurringEvents(result as CalendarEventData[], rangeStartDt, rangeEndDt, zone);
+                    renderListEvents(listContainer, expanded, weekStart, zone);
+                });
+        }
+
+        return;
+    }
+
+    if (view === 'resourceTimelineDay') {
+        const tick = target.closest('.lec-resource-timeline-axis-tick[data-minute]') as HTMLElement;
+        const lane = target.closest('.lec-resource-timeline-lane[data-resource-id]') as HTMLElement;
+        if (!tick && !lane) return;
+
+        const zone = getCalendarTimeZone(root);
+
+        let startMin = 0;
+        if (tick) {
+            startMin = parseInt(tick.getAttribute('data-minute') || '0', 10);
+        } else {
+            const rect = lane.getBoundingClientRect();
+            if (rect.width <= 0) return;
+            const percent = (e.clientX - rect.left) / rect.width;
+            startMin = Math.round((percent * 1440) / 30) * 30;
+        }
+
+        const durationMin = pendingDrag.durationMin;
+        const maxStartMin = Math.max(0, 1440 - durationMin);
+        startMin = Math.min(maxStartMin, Math.max(0, startMin));
+
+        const timeline = root.querySelector<HTMLElement>('[data-testid="resource-timeline"]');
+        if (!timeline) return;
+
+        const dayStr = timeline.getAttribute('data-date');
+        if (!dayStr) return;
+
+        const rangeStartDt = DateTime.fromISO(dayStr, { zone }).startOf('day');
+        const rangeEndDt = rangeStartDt.plus({ days: 1 });
+
+        const newStart = rangeStartDt.set({
+            hour: Math.floor(startMin / 60),
+            minute: startMin % 60,
+            second: 0,
+            millisecond: 0,
+        });
+        const newEnd = newStart.plus({ minutes: durationMin });
+
+        const newStartIso = newStart.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+        const newEndIso = newEnd.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+        const rangeStart = dayStr;
+        const rangeEnd = rangeEndDt.toFormat('yyyy-MM-dd');
+
+        const $wire = getWire(root);
+        if ($wire) {
+            const token = getRenderToken(root);
+            $wire.$call('eventDrop', pendingDrag.eventId, newStartIso, newEndIso, rangeStart, rangeEnd)
+                .then((result) => {
+                    if (token !== getRenderToken(root)) return;
+                    const expanded = expandRecurringEvents(result as CalendarEventData[], rangeStartDt, rangeEndDt, zone);
+                    renderResourceTimelineDayEvents(timeline, expanded, rangeStartDt, rangeEndDt, zone);
+                });
+        }
     }
 }
 
@@ -1392,7 +1771,7 @@ function handleResizeEnd(): void {
                 const rangeStartDt = ctx.days[0].setZone(zone).startOf('day');
                 const rangeEndDt = ctx.days[ctx.days.length - 1].setZone(zone).startOf('day').plus({ days: 1 });
                 const expanded = expandRecurringEvents(result as CalendarEventData[], rangeStartDt, rangeEndDt, zone);
-                renderTimeGridEvents(root, ctx.eventsLayer, ctx.alldayRow, expanded, ctx.days, zone);
+                renderTimeGridEventsWithFlip(root, ctx.eventsLayer, ctx.alldayRow, expanded, ctx.days, zone);
             });
     }
 }
@@ -1411,6 +1790,27 @@ document.addEventListener('mousedown', (e) => {
     if (timedEvent) {
         e.preventDefault();
         startDrag(e, timedEvent);
+        return;
+    }
+
+    const monthEvent = target.closest('.lec-event') as HTMLElement;
+    if (monthEvent) {
+        e.preventDefault();
+        startDrag(e, monthEvent);
+        return;
+    }
+
+    const listEvent = target.closest('.lec-list-event') as HTMLElement;
+    if (listEvent) {
+        e.preventDefault();
+        startDrag(e, listEvent);
+        return;
+    }
+
+    const resourceEvent = target.closest('.lec-resource-timeline-event') as HTMLElement;
+    if (resourceEvent) {
+        e.preventDefault();
+        startDrag(e, resourceEvent);
         return;
     }
 
@@ -1438,6 +1838,18 @@ document.addEventListener('mouseup', (e) => {
     }
     if (pendingDrag) {
         pendingDrag.eventEl.classList.remove('lec-event--dragging');
+    }
+
+    if (dragGhost) {
+        dragGhost.remove();
+        dragGhost = null;
+    }
+
+    if (dragDropTarget) {
+        dragDropTarget.classList.remove('lec-drop-target');
+        dragDropTarget = null;
+    } else {
+        document.querySelectorAll('.lec-drop-target').forEach(el => el.classList.remove('lec-drop-target'));
     }
 
     if (pendingResize && interactionMoved) {

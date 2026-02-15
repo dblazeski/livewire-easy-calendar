@@ -6,8 +6,12 @@ it('renders the docs homepage with a working calendar demo', function (): void {
         ->assertSee('Calendar')
         ->assertPresent('[aria-label="Documentation"]')
         ->assertPresent('[data-testid="calendar-toolbar"]')
+        ->assertPresent('[data-testid="view-switcher"]')
+        ->assertPresent('[data-testid="view-btn-month"]')
         ->assertPresent('[data-testid="timegrid"]')
-        ->assertPresent('[data-testid="slot-cell-2026-05-14-09:00"]');
+        ->assertPresent('[data-testid="slot-cell-2026-05-14-09:00"]')
+        ->click('[data-testid="view-btn-month"]')
+        ->assertPresent('[data-testid="month-grid"]');
 });
 
 it('renders the installation page', function (): void {
@@ -34,4 +38,16 @@ it('renders the recurring events example with expanded occurrences', function ()
         ->assertSeeIn('[data-testid="day-cell-2026-05-12"]', 'Daily Standup')
         ->assertPresent('[data-testid="day-cell-2026-05-14"]')
         ->assertSeeIn('[data-testid="day-cell-2026-05-14"]', 'Daily Standup');
+});
+
+it('renders the basic calendar example with drag-and-drop interactions', function (): void {
+    visit('/docs/examples/basic')
+        ->assertSee('Basic Calendar')
+        ->assertPresent('[data-testid="month-grid"]')
+        ->assertPresent('[data-testid="month-event-evt-movable-2026-05-14"]')
+        ->drag(
+            '[data-testid="month-event-evt-movable-2026-05-14"]',
+            '[data-testid="day-cell-2026-05-15"]',
+        )
+        ->assertPresent('[data-testid="month-event-evt-movable-2026-05-15"]');
 });

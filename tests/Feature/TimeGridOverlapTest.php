@@ -87,14 +87,14 @@ beforeEach(function (): void {
     HTML))->middleware('web');
 });
 
-it('assigns overlapping events to different columns', function (): void {
+it('assigns overlapping events to full width', function (): void {
     visit('/test-overlap-week')
         ->assertPresent('[data-testid="timed-event-ol-evt-1-2026-05-14"]')
         ->assertPresent('[data-testid="timed-event-ol-evt-2-2026-05-14"]')
         ->assertAttribute('[data-testid="timed-event-ol-evt-1-2026-05-14"]', 'data-col', '0')
-        ->assertAttribute('[data-testid="timed-event-ol-evt-2-2026-05-14"]', 'data-col', '1')
-        ->assertAttribute('[data-testid="timed-event-ol-evt-1-2026-05-14"]', 'data-col-count', '2')
-        ->assertAttribute('[data-testid="timed-event-ol-evt-2-2026-05-14"]', 'data-col-count', '2');
+        ->assertAttribute('[data-testid="timed-event-ol-evt-2-2026-05-14"]', 'data-col', '0')
+        ->assertAttribute('[data-testid="timed-event-ol-evt-1-2026-05-14"]', 'data-col-count', '1')
+        ->assertAttribute('[data-testid="timed-event-ol-evt-2-2026-05-14"]', 'data-col-count', '1');
 });
 
 it('assigns non-overlapping event to its own column', function (): void {
@@ -104,14 +104,14 @@ it('assigns non-overlapping event to its own column', function (): void {
         ->assertAttribute('[data-testid="timed-event-ol-evt-3-2026-05-14"]', 'data-col-count', '1');
 });
 
-it('assigns three overlapping events to three columns in day view', function (): void {
+it('assigns three overlapping events to full width in day view', function (): void {
     visit('/test-triple-overlap-day')
         ->assertAttribute('[data-testid="timed-event-triple-1-2026-05-14"]', 'data-col', '0')
-        ->assertAttribute('[data-testid="timed-event-triple-2-2026-05-14"]', 'data-col', '1')
-        ->assertAttribute('[data-testid="timed-event-triple-3-2026-05-14"]', 'data-col', '2')
-        ->assertAttribute('[data-testid="timed-event-triple-1-2026-05-14"]', 'data-col-count', '3')
-        ->assertAttribute('[data-testid="timed-event-triple-2-2026-05-14"]', 'data-col-count', '3')
-        ->assertAttribute('[data-testid="timed-event-triple-3-2026-05-14"]', 'data-col-count', '3');
+        ->assertAttribute('[data-testid="timed-event-triple-2-2026-05-14"]', 'data-col', '0')
+        ->assertAttribute('[data-testid="timed-event-triple-3-2026-05-14"]', 'data-col', '0')
+        ->assertAttribute('[data-testid="timed-event-triple-1-2026-05-14"]', 'data-col-count', '1')
+        ->assertAttribute('[data-testid="timed-event-triple-2-2026-05-14"]', 'data-col-count', '1')
+        ->assertAttribute('[data-testid="timed-event-triple-3-2026-05-14"]', 'data-col-count', '1');
 });
 
 it('preserves data-start-min and data-end-min with overlap layout', function (): void {
