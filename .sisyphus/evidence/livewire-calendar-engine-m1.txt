@@ -1,0 +1,31 @@
+== resources/dist ==
+total 16
+drwxr-xr-x@ 4 db  staff  128 Feb 14 20:34 .
+drwxr-xr-x@ 5 db  staff  160 Feb 14 20:05 ..
+-rw-r--r--@ 1 db  staff   53 Feb 14 20:39 livewire-calendar.css
+-rw-r--r--@ 1 db  staff  272 Feb 14 20:39 livewire-calendar.js
+
+== composer test (summary) ==
+
+   PASS  Tests\Feature\FetchEventsTest
+  ✓ it returns an empty array by default                                 0.11s  
+  ✓ it allows consumers to provide events as arrays via the events hook
+  ✓ it normalizes CalendarEvent objects to arrays
+  ✓ it passes the correct date range to the events hook                  0.01s  
+  ✓ it preserves extra fields from CalendarEvent
+
+   PASS  Tests\Feature\JsInitializationTest
+  ✓ it initializes the calendar root element when the JS bundle runs     0.47s  
+
+   PASS  Tests\Feature\ServiceProviderTest
+  ✓ it registers the livewire-calendar component alias                   0.01s  
+
+   PASS  Tests\Feature\SmokeTest
+  ✓ it boots the testbench application                                   0.01s  
+
+   PASS  Tests\Unit\AutoloadTest
+  ✓ it autoloads the package service provider class
+
+  Tests:    9 passed (13 assertions)
+  Duration: 0.97s
+

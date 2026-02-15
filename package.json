@@ -7,16 +7,10 @@
     "playwright:install": "playwright install"
   },
   "devDependencies": {
-    "@fullcalendar/core": "beta",
-    "@fullcalendar/daygrid": "beta",
-    "@fullcalendar/interaction": "beta",
-    "@fullcalendar/list": "beta",
-    "@fullcalendar/locales-all": "beta",
-    "@fullcalendar/multimonth": "beta",
-    "@fullcalendar/timegrid": "beta",
+    "luxon": "latest",
+    "rrule": "latest",
     "playwright": "latest",
     "typescript": "^5.0.0",
     "vite": "^7.0.0"
   }
 }
-

@@ -1,6 +1,6 @@
 {
     "name": "dblazeski/livewire-calendar",
-    "description": "FullCalendar-powered Livewire calendar component for Laravel.",
+    "description": "Livewire calendar component for Laravel with Alpine.js integration.",
     "type": "library",
     "license": "MIT",
     "require": {
@@ -11,6 +11,7 @@
     },
     "require-dev": {
         "laravel/framework": "^12.0",
+        "laravel/pint": "^1.0",
         "orchestra/testbench": "^10.0",
         "pestphp/pest": "^4.0",
         "pestphp/pest-plugin-browser": "^4.0",
@@ -37,7 +38,9 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/pest"
+        "test": "vendor/bin/pest",
+        "pint": "vendor/bin/pint",
+        "pint:test": "vendor/bin/pint --test"
     },
     "config": {
         "allow-plugins": {

@@ -1,0 +1,427 @@
+[data-livewire-calendar-root] {
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+.lec-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+}
+
+.lec-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background: #fff;
+    color: #374151;
+    cursor: pointer;
+}
+
+.lec-toolbar-btn:hover {
+    background: #f3f4f6;
+}
+
+.lec-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 0.75rem 0;
+    text-align: center;
+}
+
+.lec-month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.lec-dow-header {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.5rem 0;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+
+.lec-day-cell {
+    padding: 0.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    min-height: 2.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.lec-day-cell--outside {
+    color: #9ca3af;
+}
+
+.lec-day-number {
+    display: block;
+    font-weight: 500;
+}
+
+.lec-event {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    padding: 0.125rem 0.25rem;
+    margin-top: 0.125rem;
+    background: #3b82f6;
+    color: #fff;
+    border-radius: 0.25rem;
+    text-align: left;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.lec-timegrid {
+    --lec-day-count: 7;
+    border: 1px solid #e5e7eb;
+}
+
+.lec-timegrid-header,
+.lec-allday-row,
+.lec-timegrid-slot {
+    display: grid;
+    grid-template-columns: 3.75rem repeat(var(--lec-day-count), 1fr);
+}
+
+.lec-timegrid-day-header {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.5rem 0;
+    color: #374151;
+    border-left: 1px solid #e5e7eb;
+}
+
+.lec-timegrid-gutter {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-align: right;
+    padding-right: 0.5rem;
+}
+
+.lec-allday-label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.lec-allday-row {
+    border-bottom: 1px solid #e5e7eb;
+    min-height: 1.5rem;
+}
+
+.lec-allday-cell {
+    border-left: 1px solid #e5e7eb;
+    padding: 0.125rem 0.25rem;
+}
+
+.lec-allday-event {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    padding: 0.125rem 0.25rem;
+    background: #3b82f6;
+    color: #fff;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.lec-timegrid-body {
+    max-height: 37.5rem;
+    overflow-y: auto;
+}
+
+.lec-timegrid-body-inner {
+    position: relative;
+}
+
+.lec-timegrid-events-layer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3.75rem;
+    right: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--lec-day-count), 1fr);
+    pointer-events: none;
+}
+
+.lec-timegrid-day-body {
+    position: relative;
+    border-left: 1px solid #e5e7eb;
+}
+
+.lec-timed-event {
+    position: absolute;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    pointer-events: auto;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+.lec-timegrid-slot {
+    min-height: 1.5rem;
+}
+
+.lec-time-label {
+    font-size: 0.625rem;
+    color: #6b7280;
+    text-align: right;
+    padding-right: 0.5rem;
+    position: relative;
+    top: -0.5rem;
+}
+
+.lec-slot-cell {
+    border-left: 1px solid #e5e7eb;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.lec-list-view {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.lec-list-day-group {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.lec-list-day-group:last-child {
+    border-bottom: none;
+}
+
+.lec-list-day-heading {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6b7280;
+    padding: 0.5rem 0.75rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.lec-list-event {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.875rem;
+}
+
+.lec-list-event:last-child {
+    border-bottom: none;
+}
+
+.lec-list-event-time {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: #6b7280;
+    min-width: 6rem;
+}
+
+.lec-list-event-title {
+    font-weight: 500;
+    color: #374151;
+}
+
+.lec-multimonth-view {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.lec-multimonth-month {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+}
+
+.lec-multimonth-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.25rem 0;
+    color: #374151;
+}
+
+.lec-multimonth-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.lec-multimonth-dow-header {
+    font-size: 0.5rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.125rem 0;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+
+.lec-multimonth-day {
+    font-size: 0.625rem;
+    text-align: center;
+    padding: 0.125rem;
+    color: #374151;
+}
+
+.lec-multimonth-day--outside {
+    color: #d1d5db;
+}
+
+.lec-timed-event-title {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.lec-resize-handle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    cursor: s-resize;
+    z-index: 2;
+}
+
+.lec-event--selected {
+    outline: 2px solid #1d4ed8;
+    outline-offset: -1px;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.3);
+}
+
+.lec-event--dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.lec-event--resizing {
+    opacity: 0.8;
+}
+
+.lec-timegrid-selection {
+    position: absolute;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    border-radius: 0.25rem;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.lec-timed-event {
+    cursor: grab;
+}
+
+.lec-resource-timeline {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.lec-resource-timeline-header {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.lec-resource-timeline-header-left {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    color: #374151;
+    border-right: 1px solid #e5e7eb;
+}
+
+.lec-resource-timeline-axis {
+    display: grid;
+    grid-template-columns: repeat(48, 1fr);
+    align-items: end;
+    font-size: 0.625rem;
+    color: #6b7280;
+}
+
+.lec-resource-timeline-axis-tick {
+    padding: 0.5rem 0.125rem;
+    border-left: 1px solid #f3f4f6;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.lec-resource-timeline-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.lec-resource-timeline-row {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    min-height: 2.25rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.lec-resource-timeline-row:last-child {
+    border-bottom: none;
+}
+
+.lec-resource-timeline-label {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: #374151;
+    border-right: 1px solid #e5e7eb;
+    background: #fff;
+}
+
+.lec-resource-timeline-lane {
+    position: relative;
+    background: repeating-linear-gradient(
+        to right,
+        #f3f4f6 0,
+        #f3f4f6 1px,
+        transparent 1px,
+        transparent calc(100% / 48)
+    );
+}
+
+.lec-resource-timeline-event {
+    position: absolute;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+}

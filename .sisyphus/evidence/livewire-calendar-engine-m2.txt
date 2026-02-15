@@ -1,0 +1,62 @@
+== npm run build ==
+
+> build
+> vite build
+
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 3 modules transformed.
+rendering chunks...
+computing gzip size...
+resources/dist/livewire-calendar.css   1.15 kB │ gzip:  0.53 kB
+resources/dist/livewire-calendar.js   74.91 kB │ gzip: 23.39 kB
+✓ built in 122ms
+
+== composer test ==
+
+   PASS  Tests\Feature\EventRenderingTest
+  ✓ it renders an event inside the correct day cell                      0.67s  
+  ✓ it renders multiple events in their respective day cells             0.12s  
+  ✓ it preserves the day number alongside events                         0.11s  
+  ✓ it re-fetches events after navigating away and back                  0.15s  
+
+   PASS  Tests\Feature\FetchEventsTest
+  ✓ it returns an empty array by default                                 0.03s  
+  ✓ it allows consumers to provide events as arrays via the events hook
+  ✓ it normalizes CalendarEvent objects to arrays
+  ✓ it passes the correct date range to the events hook
+  ✓ it preserves extra fields from CalendarEvent
+
+   PASS  Tests\Feature\JsInitializationTest
+  ✓ it initializes the calendar root element when the JS bundle runs     0.11s  
+
+   PASS  Tests\Feature\MonthGridTest
+  ✓ it renders the month title for the initial date                      0.11s  
+  ✓ it renders exactly 42 day cells in a 6-week grid                     0.13s  
+  ✓ it renders the first grid cell as the Sunday before month start      0.11s  
+  ✓ it renders the last grid cell as the Saturday after month end        0.11s  
+  ✓ it marks current-month days correctly                                0.11s  
+  ✓ it renders day-of-week headers                                       0.11s  
+
+   PASS  Tests\Feature\MonthNavigationTest
+  ✓ it renders navigation buttons                                        0.13s  
+  ✓ it shows the initial month title                                     0.10s  
+  ✓ it navigates to the next month on btn-next click                     0.13s  
+  ✓ it navigates to the previous month on btn-prev click                 0.14s  
+  ✓ it navigates to the deterministic today month on btn-today click     0.12s  
+  ✓ it updates the grid cells after navigation                           0.13s  
+  ✓ it preserves 42 day cells after navigation                           0.16s  
+  ✓ it emits the today attribute on the root element                     0.10s  
+
+   PASS  Tests\Feature\ServiceProviderTest
+  ✓ it registers the livewire-calendar component alias                   0.03s  
+
+   PASS  Tests\Feature\SmokeTest
+  ✓ it boots the testbench application                                   0.01s  
+
+   PASS  Tests\Unit\AutoloadTest
+  ✓ it autoloads the package service provider class
+
+  Tests:    27 passed (50 assertions)
+  Duration: 3.29s
+

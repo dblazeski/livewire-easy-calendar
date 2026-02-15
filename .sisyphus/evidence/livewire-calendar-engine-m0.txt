@@ -1,0 +1,19 @@
+== grep @fullcalendar package.json ==
+
+== playwright run-server version ==
+Version 1.58.2
+
+== npm ls (top level) ==
+livewire-calendar@ /Users/db/Code/livewire-easy-calendar
+├── luxon@3.7.2
+├── playwright@1.58.2
+├── rrule@2.8.1
+├── typescript@5.9.3
+└── vite@7.3.1
+
+
+== resources/dist ==
+total 8
+drwxr-xr-x@ 3 db  staff   96 Feb 14 20:05 .
+drwxr-xr-x@ 5 db  staff  160 Feb 14 20:05 ..
+-rw-r--r--@ 1 db  staff   30 Feb 14 20:05 livewire-calendar.js

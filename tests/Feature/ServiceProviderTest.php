@@ -7,4 +7,3 @@ it('registers the livewire-calendar component alias', function (): void {
 
     expect(app('livewire.finder')->resolveClassComponentClassName('livewire-calendar'))->toBe(LivewireCalendar::class);
 });
-
