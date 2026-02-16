@@ -16,6 +16,7 @@ interface Wire {
 const ROOT_SELECTOR = '[data-livewire-calendar-root]';
 const INITIALIZED_ATTR = 'data-livewire-calendar-initialized';
 const TIME_ZONE_ATTR = 'data-livewire-calendar-time-zone';
+const EVENT_TIME_MANAGEMENT_ATTR = 'data-livewire-calendar-event-time-management-enabled';
 const TOTAL_CELLS = 42;
 
 let pendingDrag: {
@@ -56,6 +57,13 @@ let dragOffsetY = 0;
 function getCalendarTimeZone(root: HTMLElement): string {
     const zone = root.getAttribute(TIME_ZONE_ATTR);
     return zone && zone.length > 0 ? zone : 'UTC';
+}
+
+function isEventTimeManagementEnabled(root: HTMLElement): boolean {
+    const raw = root.getAttribute(EVENT_TIME_MANAGEMENT_ATTR);
+    if (!raw) return true;
+
+    return raw !== 'false' && raw !== '0';
 }
 
 function getWire(root: HTMLElement): Wire | undefined {
@@ -106,7 +114,7 @@ function highlightDropTarget(e: MouseEvent): void {
     let nextTarget: HTMLElement | null = null;
 
     if (target) {
-        if (view === 'timeGridWeek' || view === 'timeGridDay') {
+        if (view === 'timeGridWeek' || view === 'timeGridDay' || view === 'resourceTimeGridDay') {
             nextTarget = target.closest('.lec-slot-cell[data-date]') as HTMLElement;
         } else if (view === 'month') {
             nextTarget = target.closest('.lec-day-cell[data-date]') as HTMLElement;
@@ -239,7 +247,7 @@ function handleDragEnd(e: MouseEvent): void {
 
     const zone = getCalendarTimeZone(root);
 
-    if (view === 'timeGridWeek' || view === 'timeGridDay') {
+    if (view === 'timeGridWeek' || view === 'timeGridDay' || view === 'resourceTimeGridDay') {
         const slotCell = target.closest('.lec-slot-cell[data-date]') as HTMLElement;
         if (!slotCell) return;
 
@@ -515,6 +523,12 @@ document.addEventListener('mousedown', (e) => {
     if (!target) return;
 
     if (target.classList.contains('lec-resize-handle')) {
+        const eventEl = target.closest('.lec-timed-event') as HTMLElement;
+        const root = eventEl?.closest(ROOT_SELECTOR) as HTMLElement;
+        if (!root || !isEventTimeManagementEnabled(root)) {
+            return;
+        }
+
         e.preventDefault();
         startResize(e, target);
         return;
@@ -522,6 +536,11 @@ document.addEventListener('mousedown', (e) => {
 
     const timedEvent = target.closest('.lec-timed-event') as HTMLElement;
     if (timedEvent) {
+        const root = timedEvent.closest(ROOT_SELECTOR) as HTMLElement;
+        if (!root || !isEventTimeManagementEnabled(root)) {
+            return;
+        }
+
         e.preventDefault();
         startDrag(e, timedEvent);
         return;
@@ -529,6 +548,11 @@ document.addEventListener('mousedown', (e) => {
 
     const monthEvent = target.closest('.lec-event') as HTMLElement;
     if (monthEvent) {
+        const root = monthEvent.closest(ROOT_SELECTOR) as HTMLElement;
+        if (!root || !isEventTimeManagementEnabled(root)) {
+            return;
+        }
+
         e.preventDefault();
         startDrag(e, monthEvent);
         return;
@@ -536,6 +560,11 @@ document.addEventListener('mousedown', (e) => {
 
     const listEvent = target.closest('.lec-list-event') as HTMLElement;
     if (listEvent) {
+        const root = listEvent.closest(ROOT_SELECTOR) as HTMLElement;
+        if (!root || !isEventTimeManagementEnabled(root)) {
+            return;
+        }
+
         e.preventDefault();
         startDrag(e, listEvent);
         return;
@@ -543,6 +572,11 @@ document.addEventListener('mousedown', (e) => {
 
     const resourceEvent = target.closest('.lec-resource-timeline-event') as HTMLElement;
     if (resourceEvent) {
+        const root = resourceEvent.closest(ROOT_SELECTOR) as HTMLElement;
+        if (!root || !isEventTimeManagementEnabled(root)) {
+            return;
+        }
+
         e.preventDefault();
         startDrag(e, resourceEvent);
         return;

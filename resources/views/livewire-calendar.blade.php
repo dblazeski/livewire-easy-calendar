@@ -4,14 +4,6 @@
     @php
         $viewData = $this->viewData;
         $calendarView = $this->calendarView;
-        $viewOptions = [
-            ['key' => 'month', 'label' => 'Month'],
-            ['key' => 'timeGridWeek', 'label' => 'Week'],
-            ['key' => 'timeGridDay', 'label' => 'Day'],
-            ['key' => 'listWeek', 'label' => 'List'],
-            ['key' => 'multiMonthYear', 'label' => 'Year'],
-            ['key' => 'resourceTimelineDay', 'label' => 'Timeline'],
-        ];
     @endphp
 
     <div
@@ -21,6 +13,7 @@
         data-livewire-calendar-today="{{ $today }}"
         data-livewire-calendar-view="{{ $view }}"
         data-livewire-calendar-time-zone="{{ $timeZone }}"
+        data-livewire-calendar-event-time-management-enabled="{{ $eventTimeManagementEnabled ? 'true' : 'false' }}"
         data-livewire-calendar-renderer="blade"
         style="
             --lec-font-family: {{ config('livewire-calendar.styles.font_family', 'system-ui, -apple-system, sans-serif') }};
@@ -42,64 +35,7 @@
             --lec-selection-outline: {{ config('livewire-calendar.styles.selection_outline', 'rgba(59, 130, 246, 0.5)') }};
         "
     >
-        <div class="lec-toolbar" data-testid="calendar-toolbar">
-            <div class="lec-toolbar-nav" data-testid="calendar-toolbar-nav">
-                <button
-                    class="lec-toolbar-btn"
-                    data-testid="btn-prev"
-                    type="button"
-                    aria-label="Previous"
-                    wire:click="prev"
-                >
-                    ‹
-                </button>
-
-                <button
-                    class="lec-toolbar-btn"
-                    data-testid="btn-today"
-                    type="button"
-                    aria-label="Today"
-                    wire:click="goToToday"
-                >
-                    Today
-                </button>
-
-                <button
-                    class="lec-toolbar-btn"
-                    data-testid="btn-next"
-                    type="button"
-                    aria-label="Next"
-                    wire:click="next"
-                >
-                    ›
-                </button>
-            </div>
-
-            <div
-                class="lec-view-switcher"
-                data-testid="view-switcher"
-                role="group"
-                aria-label="Calendar view"
-            >
-                @foreach ($viewOptions as $option)
-                    @php
-                        $isActive = $option['key'] === $view;
-                    @endphp
-
-                    <button
-                        class="lec-view-switcher-btn{{ $isActive ? ' lec-view-switcher-btn--active' : '' }}"
-                        data-testid="view-btn-{{ $option['key'] }}"
-                        type="button"
-                        aria-pressed="{{ $isActive ? 'true' : 'false' }}"
-                        @if (! $isActive)
-                            wire:click="setView('{{ $option['key'] }}')"
-                        @endif
-                    >
-                        {{ $option['label'] }}
-                    </button>
-                @endforeach
-            </div>
-        </div>
+        @include($this->componentView('header'), ['view' => $view])
 
         <div class="lec-title" data-testid="calendar-title">
             {{ $viewData['title'] ?? '' }}

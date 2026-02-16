@@ -27,6 +27,12 @@
                     $endIso = (string) ($event['end'] ?? '');
                     $allDay = ($event['allDay'] ?? false) === true;
 
+                    $bgCandidate = (string) ($event['backgroundColor'] ?? ($event['color'] ?? ''));
+                    $bgCandidate = trim($bgCandidate);
+                    $bgHex = preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $bgCandidate) === 1
+                        ? $bgCandidate
+                        : '';
+
                     $timeLabel = 'all-day';
                     if (! $allDay && $startIso !== '' && $endIso !== '') {
                         $start = \Illuminate\Support\Carbon::parse($startIso)->setTimezone($this->timeZone);
@@ -42,6 +48,9 @@
                     data-date="{{ $dateStr }}"
                     data-event-start="{{ $startIso }}"
                     data-event-end="{{ $endIso }}"
+                    @if ($bgHex !== '')
+                        style="--lec-event-bg: {{ $bgHex }};"
+                    @endif
                     @if ($allDay)
                         data-all-day="true"
                     @endif

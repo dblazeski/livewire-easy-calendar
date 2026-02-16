@@ -127,7 +127,7 @@
     line-height: 1.25;
     padding: 0.125rem 0.25rem;
     margin-top: 0.125rem;
-    background: var(--lec-month-event-bg, #3b82f6);
+    background: var(--lec-event-bg, var(--lec-month-event-bg, #3b82f6));
     color: var(--lec-month-event-text, #ffffff);
     border-radius: 0.25rem;
     text-align: left;
@@ -204,7 +204,7 @@
     font-size: 0.75rem;
     line-height: 1.25;
     padding: 0.125rem 0.25rem;
-    background: var(--lec-allday-event-bg, #3b82f6);
+    background: var(--lec-event-bg, var(--lec-allday-event-bg, #3b82f6));
     color: var(--lec-allday-event-text, #ffffff);
     border-radius: 0.25rem;
     overflow: hidden;
@@ -244,7 +244,7 @@
     left: 2px;
     right: 2px;
     width: auto;
-    background: var(--lec-timed-event-bg, #3b82f6);
+    background: var(--lec-event-bg, var(--lec-timed-event-bg, #3b82f6));
     color: var(--lec-timed-event-text, #ffffff);
     font-size: 0.75rem;
     line-height: 1.25;
@@ -309,6 +309,7 @@
     gap: 0.75rem;
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid #f3f4f6;
+    border-left: 4px solid var(--lec-event-bg, transparent);
     font-size: 0.875rem;
 }
 
@@ -549,7 +550,7 @@
     bottom: 0.25rem;
     left: calc(var(--lec-start-min, 0) * 100% / 1440);
     width: calc((var(--lec-end-min, 0) - var(--lec-start-min, 0)) * 100% / 1440);
-    background: var(--lec-resource-event-bg, #3b82f6);
+    background: var(--lec-event-bg, var(--lec-resource-event-bg, #3b82f6));
     color: var(--lec-resource-event-text, #ffffff);
     font-size: 0.75rem;
     line-height: 1.25;

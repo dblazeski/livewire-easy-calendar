@@ -127,6 +127,23 @@ beforeEach(function (): void {
         </body>
         </html>
     HTML))->middleware('web');
+
+    Route::get('/test-interactions-fixed-events', fn () => Blade::render(<<<'HTML'
+        <html>
+        <head>@livewireStyles</head>
+        <body>
+            @livewireScripts
+            <livewire:interaction-test-calendar
+                view="timeGridWeek"
+                initial-date="2026-05-14"
+                first-day="0"
+                today="2026-01-15"
+                time-zone="UTC"
+                :event-time-management-enabled="false"
+            />
+        </body>
+        </html>
+    HTML))->middleware('web');
 });
 
 it('renders slot cells with stable data-testid, data-date, and data-minute attributes', function (): void {
@@ -273,4 +290,17 @@ it('applies configured event colors via CSS variables', function (): void {
 
     $bg = $page->script("getComputedStyle(document.querySelector('[data-testid=\"timed-event-int-evt-1-2026-05-14\"]')).backgroundColor");
     expect($bg)->toBe('rgb(239, 68, 68)');
+});
+
+it('does not move events when event time management is disabled', function (): void {
+    visit('/test-interactions-fixed-events')
+        ->assertPresent('[data-testid="timed-event-int-evt-1-2026-05-14"]')
+        ->drag(
+            '[data-testid="timed-event-int-evt-1-2026-05-14"]',
+            '[data-testid="slot-cell-2026-05-15-10:00"]',
+        )
+        ->click('[data-testid="btn-next"]')
+        ->click('[data-testid="btn-prev"]')
+        ->assertPresent('[data-testid="timed-event-int-evt-1-2026-05-14"]')
+        ->assertNotPresent('[data-testid="timed-event-int-evt-1-2026-05-15"]');
 });

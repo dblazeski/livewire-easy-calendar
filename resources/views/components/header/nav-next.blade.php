@@ -1,0 +1,9 @@
+<button
+    class="lec-toolbar-btn"
+    data-testid="btn-next"
+    type="button"
+    aria-label="Next"
+    wire:click="next"
+>
+    ›
+</button>

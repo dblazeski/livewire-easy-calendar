@@ -1,0 +1,9 @@
+<button
+    class="lec-toolbar-btn"
+    data-testid="btn-prev"
+    type="button"
+    aria-label="Previous"
+    wire:click="prev"
+>
+    ‹
+</button>

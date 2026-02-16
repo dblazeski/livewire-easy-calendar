@@ -1,0 +1,9 @@
+<button
+    class="lec-toolbar-btn"
+    data-testid="btn-today"
+    type="button"
+    aria-label="Today"
+    wire:click="goToToday"
+>
+    Today
+</button>

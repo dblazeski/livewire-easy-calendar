@@ -22,6 +22,11 @@
                 @php
                     $eventId = (string) ($event['id'] ?? '');
                     $eventAllDay = ($event['allDay'] ?? false) === true;
+                    $bgCandidate = (string) ($event['backgroundColor'] ?? ($event['color'] ?? ''));
+                    $bgCandidate = trim($bgCandidate);
+                    $bgHex = preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $bgCandidate) === 1
+                        ? $bgCandidate
+                        : '';
                 @endphp
 
                 <div
@@ -30,6 +35,9 @@
                     data-event-id="{{ $eventId }}"
                     data-event-start="{{ (string) ($event['start'] ?? '') }}"
                     data-event-end="{{ (string) ($event['end'] ?? '') }}"
+                    @if ($bgHex !== '')
+                        style="--lec-event-bg: {{ $bgHex }};"
+                    @endif
                     @if ($eventAllDay)
                         data-all-day="true"
                     @endif

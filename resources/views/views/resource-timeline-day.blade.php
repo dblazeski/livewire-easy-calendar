@@ -48,6 +48,11 @@
                             $startMin = (int) ($seg['startMin'] ?? 0);
                             $endMin = (int) ($seg['endMin'] ?? 0);
                             $allDay = ($event['allDay'] ?? false) === true;
+                            $bgCandidate = (string) ($event['backgroundColor'] ?? ($event['color'] ?? ''));
+                            $bgCandidate = trim($bgCandidate);
+                            $bgHex = preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $bgCandidate) === 1
+                                ? $bgCandidate
+                                : '';
                         @endphp
 
                         <div
@@ -59,7 +64,7 @@
                             data-event-id="{{ $eventId }}"
                             data-event-start="{{ (string) ($event['start'] ?? '') }}"
                             data-event-end="{{ (string) ($event['end'] ?? '') }}"
-                            style="--lec-start-min: {{ $startMin }}; --lec-end-min: {{ $endMin }}"
+                            style="--lec-start-min: {{ $startMin }}; --lec-end-min: {{ $endMin }};@if ($bgHex !== '') --lec-event-bg: {{ $bgHex }};@endif"
                             @if ($allDay)
                                 data-all-day="true"
                             @endif

@@ -4,6 +4,9 @@ return [
     'views' => [
     ],
 
+    'components' => [
+    ],
+
     'styles' => [
         'font_family' => 'system-ui, -apple-system, sans-serif',
 

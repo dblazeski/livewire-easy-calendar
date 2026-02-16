@@ -1,45 +1,52 @@
 @php
-    $days = is_array($days ?? null) ? $days : [];
-    $alldayEventsByDate = is_array($alldayEventsByDate ?? null) ? $alldayEventsByDate : [];
-    $timedSegmentsByDate = is_array($timedSegmentsByDate ?? null) ? $timedSegmentsByDate : [];
+    $dateStr = (string) ($date ?? '');
+    $resources = is_array($resources ?? null) ? $resources : [];
+    $alldayEventsByResourceId = is_array($alldayEventsByResourceId ?? null) ? $alldayEventsByResourceId : [];
+    $timedSegmentsByResourceId = is_array($timedSegmentsByResourceId ?? null) ? $timedSegmentsByResourceId : [];
 
-    $dayCount = count($days);
-
+    $resourceCount = count($resources);
     $selectedEventId = $lecSelectedEventId ?? null;
-    $selectionStart = $lecTimegridSelectionStart ?? null;
-    $selectionEnd = $lecTimegridSelectionEnd ?? null;
-    $selectionDate = $lecTimegridSelectionDate ?? null;
 @endphp
 
 <div
-    class="lec-timegrid"
-    data-testid="timegrid"
-    style="--lec-day-count: {{ $dayCount }}"
+    class="lec-timegrid lec-resource-timegrid"
+    data-testid="resource-timegrid"
+    style="--lec-day-count: {{ $resourceCount }}"
 >
     <div class="lec-timegrid-header">
         <div class="lec-timegrid-gutter"></div>
 
-        @foreach ($days as $day)
+        @foreach ($resources as $resource)
             @php
-                $dateStr = (string) ($day['date'] ?? '');
+                $resourceId = (string) ($resource['id'] ?? '');
+                $resourceTitle = (string) ($resource['title'] ?? '');
             @endphp
 
-            <div class="lec-timegrid-day-header" data-testid="timegrid-day-{{ $dateStr }}">
-                {{ (string) ($day['label'] ?? '') }}
+            <div
+                class="lec-timegrid-day-header"
+                data-testid="resource-timegrid-header-{{ $resourceId }}"
+                data-resource-id="{{ $resourceId }}"
+            >
+                {{ $resourceTitle }}
             </div>
         @endforeach
     </div>
 
-    <div class="lec-allday-row" data-testid="allday-row">
+    <div class="lec-allday-row" data-testid="resource-timegrid-allday-row">
         <div class="lec-timegrid-gutter lec-allday-label">all-day</div>
 
-        @foreach ($days as $day)
+        @foreach ($resources as $resource)
             @php
-                $dateStr = (string) ($day['date'] ?? '');
-                $cellEvents = $dateStr !== '' ? ($alldayEventsByDate[$dateStr] ?? []) : [];
+                $resourceId = (string) ($resource['id'] ?? '');
+                $cellEvents = $resourceId !== '' ? ($alldayEventsByResourceId[$resourceId] ?? []) : [];
             @endphp
 
-            <div class="lec-allday-cell" data-testid="allday-cell-{{ $dateStr }}" data-date="{{ $dateStr }}">
+            <div
+                class="lec-allday-cell"
+                data-testid="resource-timegrid-allday-cell-{{ $resourceId }}"
+                data-resource-id="{{ $resourceId }}"
+                data-date="{{ $dateStr }}"
+            >
                 @foreach ($cellEvents as $event)
                     @php
                         $eventId = (string) ($event['id'] ?? '');
@@ -52,8 +59,9 @@
 
                     <div
                         class="lec-allday-event"
-                        data-testid="allday-event-{{ $eventId }}-{{ $dateStr }}"
+                        data-testid="resource-allday-event-{{ $eventId }}-{{ $resourceId }}-{{ $dateStr }}"
                         data-event-id="{{ $eventId }}"
+                        data-resource-id="{{ $resourceId }}"
                         data-date="{{ $dateStr }}"
                         @if ($bgHex !== '')
                             style="--lec-event-bg: {{ $bgHex }};"
@@ -79,7 +87,7 @@
                     <div
                         class="lec-time-label"
                         @if ($mins === 0)
-                            data-testid="time-label-{{ $timeStr }}"
+                            data-testid="resource-time-label-{{ $timeStr }}"
                         @endif
                     >
                         @if ($mins === 0)
@@ -87,14 +95,15 @@
                         @endif
                     </div>
 
-                    @foreach ($days as $day)
+                    @foreach ($resources as $resource)
                         @php
-                            $dateStr = (string) ($day['date'] ?? '');
+                            $resourceId = (string) ($resource['id'] ?? '');
                         @endphp
 
                         <div
                             class="lec-slot-cell"
-                            data-testid="slot-cell-{{ $dateStr }}-{{ $timeStr }}"
+                            data-testid="resource-slot-cell-{{ $resourceId }}-{{ $dateStr }}-{{ $timeStr }}"
+                            data-resource-id="{{ $resourceId }}"
                             data-date="{{ $dateStr }}"
                             data-minute="{{ $minutes }}"
                         ></div>
@@ -103,51 +112,18 @@
             @endfor
 
             <div class="lec-timegrid-events-layer">
-                @foreach ($days as $day)
+                @foreach ($resources as $resource)
                     @php
-                        $dateStr = (string) ($day['date'] ?? '');
-                        $segments = $dateStr !== '' ? ($timedSegmentsByDate[$dateStr] ?? []) : [];
+                        $resourceId = (string) ($resource['id'] ?? '');
+                        $segments = $resourceId !== '' ? ($timedSegmentsByResourceId[$resourceId] ?? []) : [];
                     @endphp
 
-                    <div class="lec-timegrid-day-body" data-testid="timegrid-day-body-{{ $dateStr }}" data-date="{{ $dateStr }}">
-                        @php
-                            $selStartMin = null;
-                            $selEndMin = null;
-                            $showSelection = is_string($selectionDate)
-                                && $selectionDate !== ''
-                                && $selectionDate === $dateStr
-                                && is_string($selectionStart)
-                                && $selectionStart !== ''
-                                && is_string($selectionEnd)
-                                && $selectionEnd !== '';
-                            if ($showSelection && strlen($selectionStart) >= 16 && strlen($selectionEnd) >= 16) {
-                                $selStartTime = substr($selectionStart, 11, 5);
-                                $selEndTime = substr($selectionEnd, 11, 5);
-
-                                $selStartParts = explode(':', $selStartTime);
-                                $selEndParts = explode(':', $selEndTime);
-                                if (count($selStartParts) === 2 && count($selEndParts) === 2) {
-                                    $selStartMin = ((int) $selStartParts[0] * 60) + (int) $selStartParts[1];
-                                    $selEndMin = ((int) $selEndParts[0] * 60) + (int) $selEndParts[1];
-                                    if ($selEndMin <= $selStartMin) {
-                                        $showSelection = false;
-                                    }
-                                } else {
-                                    $showSelection = false;
-                                }
-                            }
-                        @endphp
-
-                        @if ($showSelection)
-                            <div
-                                class="lec-timegrid-selection"
-                                data-testid="timegrid-selection"
-                                data-start="{{ $selectionStart }}"
-                                data-end="{{ $selectionEnd }}"
-                                style="--lec-start-min: {{ (int) $selStartMin }}; --lec-end-min: {{ (int) $selEndMin }}"
-                            ></div>
-                        @endif
-
+                    <div
+                        class="lec-timegrid-day-body"
+                        data-testid="resource-timegrid-body-{{ $resourceId }}"
+                        data-resource-id="{{ $resourceId }}"
+                        data-date="{{ $dateStr }}"
+                    >
                         @foreach ($segments as $seg)
                             @php
                                 $event = is_array($seg['event'] ?? null) ? $seg['event'] : [];
@@ -164,8 +140,9 @@
 
                             <div
                                 class="lec-timed-event{{ $isSelected ? ' lec-event--selected' : '' }}"
-                                data-testid="timed-event-{{ $eventId }}-{{ $dateStr }}"
+                                data-testid="resource-timed-event-{{ $eventId }}-{{ $resourceId }}-{{ $dateStr }}"
                                 data-event-id="{{ $eventId }}"
+                                data-resource-id="{{ $resourceId }}"
                                 data-date="{{ $dateStr }}"
                                 data-start-min="{{ $startMin }}"
                                 data-end-min="{{ $endMin }}"
@@ -179,7 +156,10 @@
                                 @endif
                             >
                                 <span class="lec-timed-event-title">{{ (string) ($event['title'] ?? '') }}</span>
-                                <div class="lec-resize-handle" data-testid="timed-event-resize-handle-{{ $eventId }}-{{ $dateStr }}"></div>
+                                <div
+                                    class="lec-resize-handle"
+                                    data-testid="resource-timed-event-resize-handle-{{ $eventId }}-{{ $resourceId }}-{{ $dateStr }}"
+                                ></div>
                             </div>
                         @endforeach
                     </div>

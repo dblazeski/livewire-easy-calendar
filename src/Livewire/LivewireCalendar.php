@@ -27,6 +27,10 @@ class LivewireCalendar extends Component
 
     public array $views = [];
 
+    public array $components = [];
+
+    public bool $eventTimeManagementEnabled = true;
+
     public ?string $lecSelectedEventId = null;
 
     public ?string $lecTimegridSelectionStart = null;
@@ -56,7 +60,7 @@ class LivewireCalendar extends Component
         $anchor = $this->anchorDateForView($this->view);
 
         $next = match ($this->view) {
-            'timeGridDay', 'resourceTimelineDay' => $anchor->copy()->subDay(),
+            'timeGridDay', 'resourceTimelineDay', 'resourceTimeGridDay' => $anchor->copy()->subDay(),
             'timeGridWeek', 'listWeek' => $anchor->copy()->subDays(7),
             'multiMonthYear' => $anchor->copy()->subYear(),
             default => $anchor->copy()->subMonth(),
@@ -72,7 +76,7 @@ class LivewireCalendar extends Component
         $anchor = $this->anchorDateForView($this->view);
 
         $next = match ($this->view) {
-            'timeGridDay', 'resourceTimelineDay' => $anchor->copy()->addDay(),
+            'timeGridDay', 'resourceTimelineDay', 'resourceTimeGridDay' => $anchor->copy()->addDay(),
             'timeGridWeek', 'listWeek' => $anchor->copy()->addDays(7),
             'multiMonthYear' => $anchor->copy()->addYear(),
             default => $anchor->copy()->addMonth(),
@@ -88,7 +92,7 @@ class LivewireCalendar extends Component
         $today = Carbon::parse($this->today, $this->timeZone);
 
         $next = match ($this->view) {
-            'timeGridDay', 'resourceTimelineDay' => $today->copy()->startOfDay(),
+            'timeGridDay', 'resourceTimelineDay', 'resourceTimeGridDay' => $today->copy()->startOfDay(),
             'timeGridWeek', 'listWeek' => $this->computeWeekStart($today->copy()->startOfDay(), $this->firstDay),
             'multiMonthYear' => $today->copy()->startOfYear(),
             default => $today->copy()->startOfMonth(),
@@ -106,7 +110,7 @@ class LivewireCalendar extends Component
         $current = Carbon::parse($this->initialDate, $this->timeZone);
 
         $next = match ($view) {
-            'timeGridDay', 'resourceTimelineDay' => $current->copy()->startOfDay(),
+            'timeGridDay', 'resourceTimelineDay', 'resourceTimeGridDay' => $current->copy()->startOfDay(),
             'timeGridWeek', 'listWeek' => $this->computeWeekStart($current->copy()->startOfDay(), $this->firstDay),
             'multiMonthYear' => $current->copy()->startOfYear(),
             default => $current->copy()->startOfMonth(),
@@ -115,7 +119,7 @@ class LivewireCalendar extends Component
         $this->initialDate = $next->toDateString();
     }
 
-    public function mount(?string $initialDate = null, int $firstDay = 0, ?string $today = null, ?string $view = null, ?string $timeZone = null, ?array $views = null): void
+    public function mount(?string $initialDate = null, int $firstDay = 0, ?string $today = null, ?string $view = null, ?string $timeZone = null, ?array $views = null, ?array $components = null, ?bool $eventTimeManagementEnabled = null): void
     {
         $this->initialDate = $initialDate ?? now()->format('Y-m-d');
         $this->firstDay = $firstDay;
@@ -125,6 +129,36 @@ class LivewireCalendar extends Component
         $this->timeZone = $timeZone ?? config('app.timezone', 'UTC');
 
         $this->views = is_array($views) ? $views : [];
+
+        $this->components = is_array($components) ? $components : [];
+
+        $this->eventTimeManagementEnabled = $eventTimeManagementEnabled ?? true;
+    }
+
+    public function componentView(string $key): string
+    {
+        $custom = $this->components[$key]
+            ?? config("livewire-calendar.components.{$key}")
+            ?? null;
+
+        if (is_string($custom) && $custom !== '' && view()->exists($custom)) {
+            return $custom;
+        }
+
+        return match ($key) {
+            'header' => 'livewire-calendar::components.header',
+            'header-nav-prev' => 'livewire-calendar::components.header.nav-prev',
+            'header-nav-today' => 'livewire-calendar::components.header.nav-today',
+            'header-nav-next' => 'livewire-calendar::components.header.nav-next',
+            'header-view-month' => 'livewire-calendar::components.header.view-month',
+            'header-view-timeGridWeek' => 'livewire-calendar::components.header.view-time-grid-week',
+            'header-view-timeGridDay' => 'livewire-calendar::components.header.view-time-grid-day',
+            'header-view-listWeek' => 'livewire-calendar::components.header.view-list-week',
+            'header-view-multiMonthYear' => 'livewire-calendar::components.header.view-multi-month-year',
+            'header-view-resourceTimelineDay' => 'livewire-calendar::components.header.view-resource-timeline-day',
+            'header-view-resourceTimeGridDay' => 'livewire-calendar::components.header.view-resource-time-grid-day',
+            default => 'livewire-calendar::components.header',
+        };
     }
 
     protected function resolveCalendarView(): string
@@ -142,6 +176,7 @@ class LivewireCalendar extends Component
             'listWeek' => 'livewire-calendar::views.list-week',
             'multiMonthYear' => 'livewire-calendar::views.multi-month-year',
             'resourceTimelineDay' => 'livewire-calendar::views.resource-timeline-day',
+            'resourceTimeGridDay' => 'livewire-calendar::views.resource-timegrid-day',
             default => 'livewire-calendar::views.month',
         };
     }
@@ -156,6 +191,7 @@ class LivewireCalendar extends Component
             'listWeek' => $this->buildListWeekViewData($anchor),
             'multiMonthYear' => $this->buildMultiMonthYearViewData($anchor),
             'resourceTimelineDay' => $this->buildResourceTimelineDayViewData($anchor),
+            'resourceTimeGridDay' => $this->buildResourceTimeGridDayViewData($anchor),
             default => $this->buildMonthViewData($anchor),
         };
 
@@ -478,6 +514,90 @@ class LivewireCalendar extends Component
         ];
     }
 
+    protected function buildResourceTimeGridDayViewData(Carbon $dayDate): array
+    {
+        $rangeStart = $dayDate->copy()->startOfDay();
+        $rangeEnd = $rangeStart->copy()->addDay();
+
+        $range = new DateRange(start: $rangeStart, end: $rangeEnd);
+
+        $resources = array_map(
+            fn (array|CalendarResource $resource) => $resource instanceof CalendarResource
+                ? $resource->toArray()
+                : $resource,
+            $this->resources($range),
+        );
+
+        $resourceIds = [];
+        foreach ($resources as $resource) {
+            $resourceId = (string) ($resource['id'] ?? '');
+            if ($resourceId !== '') {
+                $resourceIds[$resourceId] = true;
+            }
+        }
+
+        $alldayEventsByResourceId = [];
+        $timedSegmentsByResourceId = [];
+        foreach (array_keys($resourceIds) as $resourceId) {
+            $alldayEventsByResourceId[$resourceId] = [];
+            $timedSegmentsByResourceId[$resourceId] = [];
+        }
+
+        $events = $this->eventsForDisplay($rangeStart, $rangeEnd);
+        foreach ($events as $event) {
+            $resourceIdRaw = $event['resourceId'] ?? null;
+            if ($resourceIdRaw === null) {
+                continue;
+            }
+
+            $resourceId = (string) $resourceIdRaw;
+            if (! array_key_exists($resourceId, $timedSegmentsByResourceId)) {
+                continue;
+            }
+
+            $eventStart = $this->parseIsoInZone((string) ($event['start'] ?? ''));
+            $eventEnd = $this->parseIsoInZone((string) ($event['end'] ?? ''));
+            if ($eventStart->gte($rangeEnd) || $eventEnd->lte($rangeStart)) {
+                continue;
+            }
+
+            if (($event['allDay'] ?? false) === true) {
+                $alldayEventsByResourceId[$resourceId][] = $event;
+
+                continue;
+            }
+
+            $segStart = $eventStart->lt($rangeStart) ? $rangeStart : $eventStart;
+            $segEnd = $eventEnd->gt($rangeEnd) ? $rangeEnd : $eventEnd;
+
+            $startMin = $this->wallClockMinuteInDayGrid($segStart, $rangeStart, $rangeEnd);
+            $endMin = $this->wallClockMinuteInDayGrid($segEnd, $rangeStart, $rangeEnd);
+            if ($endMin <= $startMin) {
+                continue;
+            }
+
+            $timedSegmentsByResourceId[$resourceId][] = [
+                'event' => $event,
+                'resourceId' => $resourceId,
+                'date' => $rangeStart->toDateString(),
+                'startMin' => $startMin,
+                'endMin' => $endMin,
+                'topPercent' => ($startMin / 1440) * 100,
+                'heightPercent' => (($endMin - $startMin) / 1440) * 100,
+            ];
+        }
+
+        return [
+            'title' => $dayDate->format('F j, Y'),
+            'date' => $rangeStart->toDateString(),
+            'resources' => $resources,
+            'rangeStart' => $rangeStart->toDateString(),
+            'rangeEnd' => $rangeEnd->toDateString(),
+            'alldayEventsByResourceId' => $alldayEventsByResourceId,
+            'timedSegmentsByResourceId' => $timedSegmentsByResourceId,
+        ];
+    }
+
     protected function eventsForDisplay(Carbon $rangeStart, Carbon $rangeEnd): array
     {
         $range = new DateRange(start: $rangeStart, end: $rangeEnd);
@@ -668,7 +788,7 @@ class LivewireCalendar extends Component
         $initial = Carbon::parse($this->initialDate, $this->timeZone);
 
         return match ($view) {
-            'timeGridDay', 'resourceTimelineDay' => $initial->copy()->startOfDay(),
+            'timeGridDay', 'resourceTimelineDay', 'resourceTimeGridDay' => $initial->copy()->startOfDay(),
             'timeGridWeek', 'listWeek' => $this->computeWeekStart($initial->copy()->startOfDay(), $this->firstDay),
             'multiMonthYear' => $initial->copy()->startOfYear(),
             default => $initial->copy()->startOfMonth(),
@@ -783,6 +903,10 @@ class LivewireCalendar extends Component
 
     public function eventDrop(string $eventId, string $newStart, string $newEnd, string $rangeStart, string $rangeEnd): array
     {
+        if (! $this->eventTimeManagementEnabled) {
+            return $this->fetchEvents($rangeStart, $rangeEnd);
+        }
+
         $this->clearInteractionState();
 
         $this->onEventDrop($eventId, $newStart, $newEnd);
@@ -792,6 +916,10 @@ class LivewireCalendar extends Component
 
     public function eventResize(string $eventId, string $newStart, string $newEnd, string $rangeStart, string $rangeEnd): array
     {
+        if (! $this->eventTimeManagementEnabled) {
+            return $this->fetchEvents($rangeStart, $rangeEnd);
+        }
+
         $this->clearInteractionState();
 
         $this->onEventResize($eventId, $newStart, $newEnd);
