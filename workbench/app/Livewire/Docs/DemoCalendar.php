@@ -5,6 +5,7 @@ namespace Workbench\App\Livewire\Docs;
 use Calendar\LivewireCalendar\DateRange;
 use Calendar\LivewireCalendar\Livewire\LivewireCalendar;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Workbench\App\Models\DemoEvent;
 use Workbench\App\Models\DemoResource;
 
@@ -40,6 +41,40 @@ class DemoCalendar extends LivewireCalendar
             ])
             ->all();
     }
+
+    protected function eventsForDisplay(Carbon $rangeStart, Carbon $rangeEnd): array
+    {
+        $events = parent::eventsForDisplay($rangeStart, $rangeEnd);
+
+        // Apply occurrence-level overrides after recurrence expansion.
+        foreach ($events as $i => $event) {
+            $eventId = (string) ($event["id"] ?? "");
+            if ($eventId === "") {
+                continue;
+            }
+
+            $override = $this->overrides[$eventId] ?? null;
+            if (! is_array($override)) {
+                continue;
+            }
+
+            $start = $override["start"] ?? null;
+            $end = $override["end"] ?? null;
+
+            if (is_string($start) && $start !== "") {
+                $event["start"] = $start;
+            }
+
+            if (is_string($end) && $end !== "") {
+                $event["end"] = $end;
+            }
+
+            $events[$i] = $event;
+        }
+
+        return $events;
+    }
+
 
     protected function onEventClick(string $eventId, array $eventData): void
     {

@@ -40,6 +40,17 @@ it('renders the recurring events example with expanded occurrences', function ()
         ->assertSeeIn('[data-testid="day-cell-2026-05-14"]', 'Daily Standup');
 });
 
+it('allows dragging a recurring occurrence in the recurring events example', function (): void {
+    visit('/docs/examples/recurring')
+        ->assertPresent('[data-testid="month-event-evt-standup__20260512T090000-2026-05-12"]')
+        ->drag(
+            '[data-testid="month-event-evt-standup__20260512T090000-2026-05-12"]',
+            '[data-testid="day-cell-2026-05-16"]',
+        )
+        ->assertPresent('[data-testid="month-event-evt-standup__20260512T090000-2026-05-16"]')
+        ->assertNotPresent('[data-testid="month-event-evt-standup__20260512T090000-2026-05-12"]');
+});
+
 it('renders the basic calendar example with drag-and-drop interactions', function (): void {
     visit('/docs/examples/basic')
         ->assertSee('Basic Calendar')
