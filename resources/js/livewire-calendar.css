@@ -1,6 +1,6 @@
 [data-livewire-calendar-root] {
     box-sizing: border-box;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--lec-font-family, system-ui, -apple-system, sans-serif);
 }
 
 .lec-toolbar {
@@ -47,17 +47,17 @@
 }
 
 .lec-view-switcher-btn--active {
-    background: #3b82f6;
-    color: #fff;
+    background: var(--lec-timed-event-bg, #3b82f6);
+    color: var(--lec-timed-event-text, #ffffff);
     cursor: default;
 }
 
 .lec-view-switcher-btn--active:hover {
-    background: #3b82f6;
+    background: var(--lec-timed-event-bg, #3b82f6);
 }
 
 .lec-view-switcher-btn:focus-visible {
-    outline: 2px solid rgba(59, 130, 246, 0.6);
+    outline: 2px solid var(--lec-drop-target-outline, rgba(59, 130, 246, 0.4));
     outline-offset: -2px;
 }
 
@@ -127,8 +127,8 @@
     line-height: 1.25;
     padding: 0.125rem 0.25rem;
     margin-top: 0.125rem;
-    background: #3b82f6;
-    color: #fff;
+    background: var(--lec-month-event-bg, #3b82f6);
+    color: var(--lec-month-event-text, #ffffff);
     border-radius: 0.25rem;
     text-align: left;
     overflow: hidden;
@@ -204,8 +204,8 @@
     font-size: 0.75rem;
     line-height: 1.25;
     padding: 0.125rem 0.25rem;
-    background: #3b82f6;
-    color: #fff;
+    background: var(--lec-allday-event-bg, #3b82f6);
+    color: var(--lec-allday-event-text, #ffffff);
     border-radius: 0.25rem;
     overflow: hidden;
     white-space: nowrap;
@@ -239,8 +239,13 @@
 
 .lec-timed-event {
     position: absolute;
-    background: #3b82f6;
-    color: #fff;
+    top: calc(var(--lec-start-min, 0) * 100% / 1440);
+    height: calc((var(--lec-end-min, 0) - var(--lec-start-min, 0)) * 100% / 1440);
+    left: 2px;
+    right: 2px;
+    width: auto;
+    background: var(--lec-timed-event-bg, #3b82f6);
+    color: var(--lec-timed-event-text, #ffffff);
     font-size: 0.75rem;
     line-height: 1.25;
     padding: 0.125rem 0.25rem;
@@ -394,9 +399,9 @@
 }
 
 .lec-event--selected {
-    outline: 2px solid #1d4ed8;
+    outline: 2px solid var(--lec-selected-outline, #1d4ed8);
     outline-offset: -1px;
-    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.3);
+    box-shadow: 0 0 0 2px var(--lec-selected-shadow, rgba(29, 78, 216, 0.3));
 }
 
 .lec-event--dragging {
@@ -414,8 +419,8 @@
     position: fixed;
     pointer-events: none;
     padding: 0.25rem 0.5rem;
-    background: #3b82f6;
-    color: #fff;
+    background: var(--lec-drag-ghost-bg, #3b82f6);
+    color: var(--lec-drag-ghost-text, #ffffff);
     font-size: 0.75rem;
     line-height: 1.25;
     opacity: 0.9;
@@ -430,15 +435,19 @@
 }
 
 .lec-drop-target {
-    background: rgba(59, 130, 246, 0.1);
-    outline: 2px dashed rgba(59, 130, 246, 0.4);
+    background: var(--lec-drop-target-bg, rgba(59, 130, 246, 0.1));
+    outline: 2px dashed var(--lec-drop-target-outline, rgba(59, 130, 246, 0.4));
     outline-offset: -2px;
 }
 
 .lec-timegrid-selection {
     position: absolute;
-    background: rgba(59, 130, 246, 0.2);
-    border: 1px solid rgba(59, 130, 246, 0.5);
+    top: calc(var(--lec-start-min, 0) * 100% / 1440);
+    height: calc((var(--lec-end-min, 0) - var(--lec-start-min, 0)) * 100% / 1440);
+    left: 0;
+    right: 0;
+    background: var(--lec-selection-bg, rgba(59, 130, 246, 0.2));
+    border: 1px solid var(--lec-selection-outline, rgba(59, 130, 246, 0.5));
     border-radius: 0.25rem;
     z-index: 2;
     pointer-events: none;
@@ -538,8 +547,10 @@
     position: absolute;
     top: 0.25rem;
     bottom: 0.25rem;
-    background: #3b82f6;
-    color: #fff;
+    left: calc(var(--lec-start-min, 0) * 100% / 1440);
+    width: calc((var(--lec-end-min, 0) - var(--lec-start-min, 0)) * 100% / 1440);
+    background: var(--lec-resource-event-bg, #3b82f6);
+    color: var(--lec-resource-event-text, #ffffff);
     font-size: 0.75rem;
     line-height: 1.25;
     padding: 0.125rem 0.25rem;

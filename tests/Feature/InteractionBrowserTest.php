@@ -260,3 +260,17 @@ it('moves resource timeline event to a new time on drag and drop', function (): 
         )
         ->assertAttribute('[data-testid="resource-event-res-int-evt-1-res-1"]', 'data-start-min', '720');
 });
+
+it('applies configured event colors via CSS variables', function (): void {
+    config()->set('livewire-calendar.styles.timed_event_bg', '#ef4444');
+
+    $page = visit('/test-interactions')
+        ->assertPresent('[data-livewire-calendar-root]')
+        ->assertPresent('[data-testid="timed-event-int-evt-1-2026-05-14"]');
+
+    $var = $page->script("getComputedStyle(document.querySelector('[data-livewire-calendar-root]')).getPropertyValue('--lec-timed-event-bg').trim()");
+    expect($var)->toBe('#ef4444');
+
+    $bg = $page->script("getComputedStyle(document.querySelector('[data-testid=\"timed-event-int-evt-1-2026-05-14\"]')).backgroundColor");
+    expect($bg)->toBe('rgb(239, 68, 68)');
+});

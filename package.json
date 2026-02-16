@@ -8,6 +8,7 @@
     "playwright:install": "playwright install"
   },
   "devDependencies": {
+    "@types/luxon": "latest",
     "@tailwindcss/cli": "latest",
     "luxon": "latest",
     "tailwindcss": "latest",

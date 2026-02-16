@@ -13,6 +13,7 @@ class LivewireCalendarServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('livewire-calendar')
+            ->hasConfigFile()
             ->hasViews()
             ->hasAssets();
     }
