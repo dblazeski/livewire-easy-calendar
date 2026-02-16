@@ -210,9 +210,6 @@
   .visible {
     visibility: visible;
   }
-  .absolute {
-    position: absolute;
-  }
   .fixed {
     position: fixed;
   }
@@ -337,11 +334,11 @@
   .w-72 {
     width: calc(var(--spacing) * 72);
   }
+  .w-\[96\%\] {
+    width: 96%;
+  }
   .max-w-2xl {
     max-width: var(--container-2xl);
-  }
-  .max-w-4xl {
-    max-width: var(--container-4xl);
   }
   .flex-1 {
     flex: 1;
@@ -757,9 +754,9 @@
       grid-template-columns: minmax(0,1fr) 22rem;
     }
   }
-  .lg\:px-12 {
+  .lg\:px-0 {
     @media (width >= 64rem) {
-      padding-inline: calc(var(--spacing) * 12);
+      padding-inline: calc(var(--spacing) * 0);
     }
   }
   .lg\:pt-12 {
