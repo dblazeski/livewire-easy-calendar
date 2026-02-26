@@ -1,6 +1,6 @@
 {
     "name": "dblazeski/livewire-calendar",
-    "description": "Livewire calendar component for Laravel with Alpine.js integration.",
+    "description": "Livewire calendar component for Laravel.",
     "type": "library",
     "license": "MIT",
     "require": {

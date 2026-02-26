@@ -8,7 +8,7 @@
 
         <p>
             Recurrence is driven by the <code>rrule</code> field on an event.
-            The package expands occurrences in the browser using the <code>rrule</code> library.
+            The package expands occurrences on the server using <code>rlanvin/php-rrule</code>.
         </p>
 
         <h2>Event Payload</h2>

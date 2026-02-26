@@ -11,7 +11,7 @@
 
         <p class="text-pretty mt-4 max-w-2xl text-lg text-docs-muted">
             A powerful, fully-featured calendar component for Laravel.
-            Built with Livewire and Alpine.js; no third-party calendar UI libraries.
+            Built with Livewire; no third-party calendar UI libraries.
         </p>
 
         <div class="mt-6 flex flex-wrap gap-3">
@@ -26,7 +26,7 @@
             </a>
 
             <a
-                href="https://github.com/dblazeski/livewire-calendar"
+                href="https://github.com/dblazeski/livewire-easy-calendar"
                 target="_blank"
                 rel="noopener"
                 class="inline-flex items-center gap-2 rounded-lg border border-docs-border bg-white px-5 py-2.5 text-sm font-medium text-docs-text shadow-sm transition-colors duration-150 hover:bg-docs-surface"
@@ -41,7 +41,7 @@
 
     @php
     $features = [
-        ['num' => '01', 'title' => 'Multiple Views', 'desc' => 'Month, week, day, list, year, and resource timeline.'],
+        ['num' => '01', 'title' => 'Multiple Views', 'desc' => 'Month, week, day, list, year, resource timeline, and resource time grid.'],
         ['num' => '02', 'title' => 'Livewire Hooks', 'desc' => 'Fetch events/resources and handle interactions in PHP.'],
         ['num' => '03', 'title' => 'Recurrence', 'desc' => 'RRULE support with exclusion dates (EXDATE).'],
         ['num' => '04', 'title' => 'Interactions', 'desc' => 'Click/select/resize in time grid; drag-and-drop across views.'],

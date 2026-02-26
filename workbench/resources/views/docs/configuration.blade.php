@@ -51,6 +51,24 @@
                 <td><code>config('app.timezone')</code></td>
                 <td>IANA time zone string used in the browser (Luxon).</td>
             </tr>
+            <tr>
+                <td><code>:views</code></td>
+                <td><code>array</code></td>
+                <td><code>[]</code></td>
+                <td>Per-view blade path overrides.</td>
+            </tr>
+            <tr>
+                <td><code>:components</code></td>
+                <td><code>array</code></td>
+                <td><code>[]</code></td>
+                <td>Per-component blade path overrides.</td>
+            </tr>
+            <tr>
+                <td><code>:event-time-management-enabled</code></td>
+                <td><code>bool</code></td>
+                <td><code>true</code></td>
+                <td>Set to <code>false</code> to disable drag-and-drop and resize.</td>
+            </tr>
             </tbody>
         </table>
 
@@ -62,6 +80,9 @@
     today=&quot;2026-05-14&quot;
     first-day=&quot;0&quot;
     time-zone=&quot;UTC&quot;
+    :views=&quot;['month' =&gt; 'my-views.custom-month']&quot;
+    :components=&quot;['header' =&gt; 'my-views.custom-header']&quot;
+    :event-time-management-enabled=&quot;false&quot;
 /&gt;</code></pre>
 
         <blockquote>
@@ -70,5 +91,27 @@
                 For example, selections and drag interactions use <code>YYYY-MM-DDTHH:mm:ss</code> (no offset).
             </p>
         </blockquote>
+
+        <h2>Config File</h2>
+
+        <p>
+            Publish the config file to customise global defaults:
+        </p>
+
+        <pre><code>php artisan vendor:publish --tag=livewire-calendar</code></pre>
+
+        <p>
+            The config file (<code>config/livewire-calendar.php</code>) supports:
+        </p>
+
+        <ul>
+            <li><code>views</code> &mdash; global view overrides (same as the mount parameter, applied to all instances)</li>
+            <li><code>components</code> &mdash; global component overrides (header, nav buttons, view switchers)</li>
+            <li><code>styles</code> &mdash; CSS custom property values for theming (font, event colors, selection, drag ghost, etc.)</li>
+        </ul>
+
+        <p>
+            Mount parameters take precedence over config-file values. Config values take precedence over built-in defaults.
+        </p>
     </div>
 @endsection

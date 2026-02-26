@@ -18,6 +18,7 @@ $sections = [
         ['label' => 'List', 'href' => '/docs/views/list'],
         ['label' => 'Year', 'href' => '/docs/views/year'],
         ['label' => 'Resource Timeline', 'href' => '/docs/views/resource-timeline'],
+        ['label' => 'Resource Time Grid', 'href' => '/docs/views/resource-timegrid-day'],
     ],
     'Recurrence' => [
         ['label' => 'RRULE Basics', 'href' => '/docs/recurrence/rrule'],
@@ -90,7 +91,7 @@ $isActive = fn (string $href): bool => request()->is(ltrim($href, '/'));
 
     <div class="border-t border-white/10 px-6 py-4">
         <a
-            href="https://github.com/dblazeski/livewire-calendar"
+            href="https://github.com/dblazeski/livewire-easy-calendar"
             target="_blank"
             rel="noopener"
             class="flex items-center gap-2 text-xs text-docs-nav-muted transition-colors duration-150 hover:text-docs-nav"

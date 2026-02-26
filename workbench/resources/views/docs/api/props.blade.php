@@ -19,6 +19,9 @@
     ?string $today = null,
     ?string $view = null,
     ?string $timeZone = null,
+    ?array $views = null,
+    ?array $components = null,
+    ?bool $eventTimeManagementEnabled = null,
 ): void</code></pre>
 
         <h2>Defaults</h2>
@@ -28,6 +31,9 @@
             <li><code>today</code> defaults to <code>now()-&gt;format('Y-m-d')</code></li>
             <li><code>view</code> defaults to <code>month</code></li>
             <li><code>timeZone</code> defaults to <code>config('app.timezone', 'UTC')</code></li>
+            <li><code>views</code> defaults to <code>[]</code></li>
+            <li><code>components</code> defaults to <code>[]</code></li>
+            <li><code>eventTimeManagementEnabled</code> defaults to <code>true</code></li>
         </ul>
 
         <h2>Overriding mount</h2>

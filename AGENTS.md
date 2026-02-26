@@ -10,7 +10,7 @@ When writing complex features or significant refactors, use an `ExecPlan` (as de
 
 # Proactive Skill Usage
 
-- When working on Laravel, Pest, or Alpine.js tasks, proactively discover and use any relevant agent skills available in the runtime.
+- When working on Laravel or Pest tasks, proactively discover and use any relevant agent skills available in the runtime.
 - If no dedicated skill exists for the topic, follow existing repo patterns and use official docs/Context7 rather than guessing.
 
 # Testing

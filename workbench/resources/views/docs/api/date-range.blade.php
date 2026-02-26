@@ -21,9 +21,8 @@
         <h2>Where it comes from</h2>
 
         <p>
-            In the browser, the calendar requests data by calling Livewire methods like <code>fetchEvents</code>.
-            Those methods receive <code>start</code> and <code>end</code> strings (often <code>YYYY-MM-DD</code>), which are converted
-            into a <code>DateRange</code>.
+            During rendering, the component computes the visible date range and passes it as a
+            <code>DateRange</code> to your <code>events()</code> and <code>resources()</code> hooks.
         </p>
     </div>
 @endsection

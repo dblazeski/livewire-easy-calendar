@@ -1,6 +1,6 @@
 # Livewire Calendar
 
-A Livewire calendar component for Laravel with Alpine.js integration. Provides multiple calendar views (month, week, day, list, year, resource timeline) with event rendering, recurrence support, and interactive features.
+A Livewire calendar component for Laravel. Provides multiple calendar views (month, week, day, list, year, resource timeline) with event rendering, recurrence support, and interactive features.
 
 ## Installation
 
@@ -70,6 +70,8 @@ Optional fields:
 - `rrule` (string): Recurrence rule (e.g., `FREQ=DAILY;COUNT=5`)
 - `exdate` (array): Exclusion dates for recurring events (e.g., `['2026-05-15']`)
 - `resourceId` (string): Resource identifier for resource timeline views
+- `color` (string): Hex color for per-event background override (e.g., `#ef4444`). Accepts `#RGB`, `#RRGGBB`, or `#RRGGBBAA`.
+- `backgroundColor` (string): Same as `color` but takes precedence when both are present.
 
 ### Using CalendarEvent Helper
 
@@ -115,6 +117,7 @@ Available views:
 - `listWeek`: List view for a week
 - `multiMonthYear`: 12-month year grid
 - `resourceTimelineDay`: Single-day timeline with resource rows
+- `resourceTimeGridDay`: Single-day time grid with one column per resource
 
 ### Component Props
 
@@ -124,11 +127,14 @@ Configure the calendar via mount parameters:
 public function mount(): void
 {
     parent::mount(
-        initialDate: '2026-05-14',  // YYYY-MM-DD
-        firstDay: 0,                 // 0=Sunday, 1=Monday, etc.
-        today: '2026-05-14',         // YYYY-MM-DD (for testing)
-        view: 'month',               // View name
-        timeZone: 'America/New_York' // IANA timezone
+        initialDate: '2026-05-14',           // YYYY-MM-DD
+        firstDay: 0,                          // 0=Sunday, 1=Monday, etc.
+        today: '2026-05-14',                  // YYYY-MM-DD (for testing)
+        view: 'month',                        // View name
+        timeZone: 'America/New_York',         // IANA timezone
+        views: ['month' => 'my.custom-month'],// Per-view blade overrides
+        components: ['header' => 'my.header'],// Per-component blade overrides
+        eventTimeManagementEnabled: false,     // Disable drag/drop and resize
     );
 }
 ```
@@ -234,7 +240,7 @@ The `rrule` value follows the iCalendar RRULE format. The `exdate` array exclude
 
 ## Architecture
 
-This package does **not** depend on FullCalendar or any third-party calendar libraries. FullCalendar is used only as a specification reference for view names and event payload conventions. All rendering and interaction logic is implemented from scratch using Livewire, Alpine.js, and vanilla JavaScript.
+This package does **not** depend on FullCalendar or any third-party calendar libraries. FullCalendar is used only as a specification reference for view names and event payload conventions. All rendering and interaction logic is implemented from scratch using Livewire and vanilla JavaScript.
 
 ## Testing
 
