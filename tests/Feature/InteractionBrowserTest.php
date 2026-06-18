@@ -154,6 +154,16 @@ beforeEach(function (): void {
         </html>
     HTML))->middleware('web');
 
+    Route::get('/test-interactions-late-event-day', fn () => Blade::render(<<<'HTML'
+        <html>
+        <head>@livewireStyles</head>
+        <body>
+            @livewireScripts
+            <livewire:late-event-interaction-test-calendar view="timeGridDay" initial-date="2026-05-14" first-day="0" today="2026-05-14" time-zone="UTC" />
+        </body>
+        </html>
+    HTML))->middleware('web');
+
     Route::get('/test-interactions-resource-timeline', fn () => Blade::render(<<<'HTML'
         <html>
         <head>@livewireStyles</head>
@@ -212,6 +222,53 @@ it('scrolls the timegrid body to the first timed event after today navigation mo
         ->assertNotPresent('[data-testid="timed-event-late-evt-1-2026-05-14"]');
 
     $page->click('[data-testid="btn-today"]')
+        ->assertPresent('[data-testid="timed-event-late-evt-1-2026-05-14"]');
+
+    $page->assertScript(<<<'JS'
+        (() => {
+            const body = document.querySelector('.lec-timegrid-body');
+            const event = document.querySelector('[data-testid="timed-event-late-evt-1-2026-05-14"]');
+
+            if (!body || !event) {
+                return false;
+            }
+
+            const bodyRect = body.getBoundingClientRect();
+            const eventRect = event.getBoundingClientRect();
+
+            return body.scrollTop > 0
+                && eventRect.top >= bodyRect.top
+                && eventRect.bottom <= bodyRect.bottom;
+        })()
+    JS);
+});
+
+it('scrolls the timegrid body after returning to the same timegrid view', function (): void {
+    $page = visit('/test-interactions-late-event-day')
+        ->assertPresent('[data-testid="timegrid"]')
+        ->assertPresent('[data-testid="timed-event-late-evt-1-2026-05-14"]');
+
+    $page->assertScript(<<<'JS'
+        (() => {
+            const body = document.querySelector('.lec-timegrid-body');
+            const event = document.querySelector('[data-testid="timed-event-late-evt-1-2026-05-14"]');
+
+            if (!body || !event) {
+                return false;
+            }
+
+            const bodyRect = body.getBoundingClientRect();
+            const eventRect = event.getBoundingClientRect();
+
+            return body.scrollTop > 0
+                && eventRect.top >= bodyRect.top
+                && eventRect.bottom <= bodyRect.bottom;
+        })()
+    JS);
+
+    $page->click('[data-testid="view-btn-resourceTimelineDay"]')
+        ->assertPresent('[data-testid="resource-timeline"]')
+        ->click('[data-testid="view-btn-timeGridDay"]')
         ->assertPresent('[data-testid="timed-event-late-evt-1-2026-05-14"]');
 
     $page->assertScript(<<<'JS'

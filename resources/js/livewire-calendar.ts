@@ -19,7 +19,7 @@ const INITIALIZED_ATTR = 'data-livewire-calendar-initialized';
 const TIME_ZONE_ATTR = 'data-livewire-calendar-time-zone';
 const EVENT_TIME_MANAGEMENT_ATTR = 'data-livewire-calendar-event-time-management-enabled';
 const TOTAL_CELLS = 42;
-const scrollSignatures = new WeakMap<HTMLElement, string>();
+const scrollSignatures = new WeakMap<HTMLElement, { body: HTMLElement; signature: string }>();
 
 let pendingDrag: {
     eventEl: HTMLElement;
@@ -110,13 +110,20 @@ function getScrollSignature(root: HTMLElement, event: HTMLElement): string {
 
 function scrollTimeGrid(root: HTMLElement): void {
     const body = getTimeGridBody(root);
-    if (!body) return;
+    if (!body) {
+        scrollSignatures.delete(root);
+        return;
+    }
 
     const event = getEarliestTimedEvent(root);
-    if (!event) return;
+    if (!event) {
+        scrollSignatures.delete(root);
+        return;
+    }
 
     const signature = getScrollSignature(root, event);
-    if (scrollSignatures.get(root) === signature) return;
+    const previous = scrollSignatures.get(root);
+    if (previous?.body === body && previous.signature === signature) return;
 
     const slot = body.querySelector<HTMLElement>('.lec-timegrid-slot');
     if (!slot) return;
@@ -125,7 +132,7 @@ function scrollTimeGrid(root: HTMLElement): void {
     const startMinute = Number(event.dataset.startMin);
 
     body.scrollTop = Math.max(0, (startMinute / 30) * slotHeight - (slotHeight * 2));
-    scrollSignatures.set(root, signature);
+    scrollSignatures.set(root, { body, signature });
 }
 
 function scheduleTimeGridScroll(root: HTMLElement): void {
