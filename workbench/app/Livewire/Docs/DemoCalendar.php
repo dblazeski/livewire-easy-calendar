@@ -48,8 +48,8 @@ class DemoCalendar extends LivewireCalendar
 
         // Apply occurrence-level overrides after recurrence expansion.
         foreach ($events as $i => $event) {
-            $eventId = (string) ($event["id"] ?? "");
-            if ($eventId === "") {
+            $eventId = (string) ($event['id'] ?? '');
+            if ($eventId === '') {
                 continue;
             }
 
@@ -58,15 +58,15 @@ class DemoCalendar extends LivewireCalendar
                 continue;
             }
 
-            $start = $override["start"] ?? null;
-            $end = $override["end"] ?? null;
+            $start = $override['start'] ?? null;
+            $end = $override['end'] ?? null;
 
-            if (is_string($start) && $start !== "") {
-                $event["start"] = $start;
+            if (is_string($start) && $start !== '') {
+                $event['start'] = $start;
             }
 
-            if (is_string($end) && $end !== "") {
-                $event["end"] = $end;
+            if (is_string($end) && $end !== '') {
+                $event['end'] = $end;
             }
 
             $events[$i] = $event;
@@ -74,7 +74,6 @@ class DemoCalendar extends LivewireCalendar
 
         return $events;
     }
-
 
     protected function onEventClick(string $eventId, array $eventData): void
     {
