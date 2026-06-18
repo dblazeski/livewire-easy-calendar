@@ -4,7 +4,7 @@
 
 **Goal:** Port the Bukiraj `feature/ald-170-today-button` calendar auto-scroll behavior into the `dblazeski/livewire-calendar` package so time-grid views scroll the earliest visible timed event into view on first render and after Livewire navigation/morphs.
 
-**Architecture:** Keep the behavior in the package JavaScript bundle because the package already renders stable data attributes for the calendar root, current view, initial date, and timed event start minutes. Do not change PHP domain/calendar date behavior; add a browser regression that exercises the public package component through Testbench and visible DOM. Rebuild the generated dist bundle after the TypeScript source change.
+**Architecture:** Keep the behavior in the package JavaScript bundle because the package already renders stable data attributes for the calendar root, current view, initial date, timed event start minutes, and the package-specific `.lec-timegrid-body` scroll container. Do not change PHP domain/calendar date behavior; add browser regressions that exercise the public package component through Testbench and visible DOM. Rebuild the generated dist bundle after the TypeScript source change.
 
 **Tech Stack:** PHP 8.3, Laravel 12, Livewire 4, Pest 4 Browser, TypeScript, Vite.
 
@@ -88,6 +88,20 @@ Route::get('/test-interactions-late-event-today', fn () => Blade::render(<<<'HTM
 HTML))->middleware('web');
 ```
 
+Add a third package browser route that starts in `timeGridDay` on the event date so the review-fix regression can switch away from the timegrid and return to the same timegrid view:
+
+```php
+Route::get('/test-interactions-late-event-day', fn () => Blade::render(<<<'HTML'
+    <html>
+    <head>@livewireStyles</head>
+    <body>
+        @livewireScripts
+        <livewire:late-event-interaction-test-calendar view="timeGridDay" initial-date="2026-05-14" first-day="0" today="2026-05-14" time-zone="UTC" />
+    </body>
+    </html>
+HTML))->middleware('web');
+```
+
 **Step 3: Write failing first-render browser test**
 
 Append this test to `tests/Feature/InteractionBrowserTest.php`:
@@ -155,7 +169,62 @@ it('scrolls the timegrid body to the first timed event after today navigation mo
 
 This test exercises the package's `goToToday()` Livewire action through the real toolbar button and proves the post-morph scroll path, not just first render.
 
-**Step 5: Run failing tests**
+**Step 5: Write failing recreated-timegrid browser test**
+
+Append this third test to `tests/Feature/InteractionBrowserTest.php`:
+
+```php
+it('scrolls the timegrid body after returning to the same timegrid view', function (): void {
+    $page = visit('/test-interactions-late-event-day')
+        ->assertPresent('[data-testid="timegrid"]')
+        ->assertPresent('[data-testid="timed-event-late-evt-1-2026-05-14"]');
+
+    $page->assertScript(<<<'JS'
+        (() => {
+            const body = document.querySelector('.lec-timegrid-body');
+            const event = document.querySelector('[data-testid="timed-event-late-evt-1-2026-05-14"]');
+
+            if (!body || !event) {
+                return false;
+            }
+
+            const bodyRect = body.getBoundingClientRect();
+            const eventRect = event.getBoundingClientRect();
+
+            return body.scrollTop > 0
+                && eventRect.top >= bodyRect.top
+                && eventRect.bottom <= bodyRect.bottom;
+        })()
+    JS);
+
+    $page->click('[data-testid="view-btn-resourceTimelineDay"]')
+        ->assertPresent('[data-testid="resource-timeline"]')
+        ->click('[data-testid="view-btn-timeGridDay"]')
+        ->assertPresent('[data-testid="timed-event-late-evt-1-2026-05-14"]');
+
+    $page->assertScript(<<<'JS'
+        (() => {
+            const body = document.querySelector('.lec-timegrid-body');
+            const event = document.querySelector('[data-testid="timed-event-late-evt-1-2026-05-14"]');
+
+            if (!body || !event) {
+                return false;
+            }
+
+            const bodyRect = body.getBoundingClientRect();
+            const eventRect = event.getBoundingClientRect();
+
+            return body.scrollTop > 0
+                && eventRect.top >= bodyRect.top
+                && eventRect.bottom <= bodyRect.bottom;
+        })()
+    JS);
+});
+```
+
+This test covers the GitHub review comment by recreating the timegrid body under a preserved Livewire root and proving the late event is visible again after the return morph.
+
+**Step 6: Run failing tests**
 
 Run:
 
@@ -163,7 +232,7 @@ Run:
 composer test -- --filter "scrolls the timegrid body to the first timed event"
 ```
 
-Expected before implementation: both tests FAIL because `.lec-timegrid-body.scrollTop` remains `0` and the late event is outside the visible scroll area.
+Expected before implementation: the first two tests FAIL because `.lec-timegrid-body.scrollTop` remains `0` and the late event is outside the visible scroll area. The recreated-timegrid test is expected to fail on the first implementation commit before the review fix.
 
 ---
 
@@ -177,7 +246,7 @@ Expected before implementation: both tests FAIL because `.lec-timegrid-body.scro
 Add:
 
 ```ts
-const scrollSignatures = new WeakMap<HTMLElement, string>();
+const scrollSignatures = new WeakMap<HTMLElement, { body: HTMLElement; signature: string }>();
 ```
 
 **Step 2: Add focused helper functions after `getWire()`**
@@ -218,13 +287,20 @@ function getScrollSignature(root: HTMLElement, event: HTMLElement): string {
 
 function scrollTimeGrid(root: HTMLElement): void {
     const body = getTimeGridBody(root);
-    if (!body) return;
+    if (!body) {
+        scrollSignatures.delete(root);
+        return;
+    }
 
     const event = getEarliestTimedEvent(root);
-    if (!event) return;
+    if (!event) {
+        scrollSignatures.delete(root);
+        return;
+    }
 
     const signature = getScrollSignature(root, event);
-    if (scrollSignatures.get(root) === signature) return;
+    const previous = scrollSignatures.get(root);
+    if (previous?.body === body && previous.signature === signature) return;
 
     const slot = body.querySelector<HTMLElement>('.lec-timegrid-slot');
     if (!slot) return;
@@ -233,7 +309,7 @@ function scrollTimeGrid(root: HTMLElement): void {
     const startMinute = Number(event.dataset.startMin);
 
     body.scrollTop = Math.max(0, (startMinute / 30) * slotHeight - (slotHeight * 2));
-    scrollSignatures.set(root, signature);
+    scrollSignatures.set(root, { body, signature });
 }
 
 function scheduleTimeGridScroll(root: HTMLElement): void {
@@ -243,7 +319,7 @@ function scheduleTimeGridScroll(root: HTMLElement): void {
 }
 ```
 
-Use existing package style: simple early returns, no fallback query paths beyond package-rendered selectors, and no PHP changes.
+Use existing package style: simple early returns, no fallback query paths beyond package-rendered selectors, and no PHP changes. Store the body element with the signature so a preserved calendar root can still re-scroll when Livewire recreates `.lec-timegrid-body` with the same event/date signature.
 
 **Step 3: Wire scroll refresh into initialization and Livewire lifecycle**
 
@@ -312,6 +388,8 @@ composer test -- --filter "scrolls the timegrid body to the first timed event"
 ```
 
 Expected after implementation before rebuild: still FAIL because `TestCase::publishAssetsForBrowserTests()` publishes `resources/dist`, not `resources/js/livewire-calendar.ts`.
+
+**Review-fix note:** GitHub review comment `discussion_r3434544255` identified that the first implementation suppressed scrolling when a timegrid was removed and later inserted again with the same earliest event signature. The final implementation ties the cache entry to both the preserved root and the concrete `.lec-timegrid-body` element, and deletes stale entries when the current view has no timegrid body or timed event.
 
 ---
 
@@ -408,7 +486,7 @@ Run:
 ```bash
 gh pr create --base main --head feature/ald-170-today-button --title "Scroll timegrid calendar to visible events" --body "## Summary
 - port time-grid auto-scroll behavior from Bukiraj into the package bundle
-- add a browser regression for the first timed event being visible after render
+- add browser regressions for first render, today navigation morphs, and returning to a recreated timegrid body
 - rebuild the distributed JS asset
 
 ## Tests
