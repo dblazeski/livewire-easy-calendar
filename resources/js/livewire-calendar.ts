@@ -5,6 +5,7 @@ declare global {
     interface Window {
         Livewire?: {
             find(id: string): Wire | undefined;
+            hook(name: string, callback: (payload: { el: HTMLElement }) => void): void;
         };
     }
 }
@@ -18,6 +19,7 @@ const INITIALIZED_ATTR = 'data-livewire-calendar-initialized';
 const TIME_ZONE_ATTR = 'data-livewire-calendar-time-zone';
 const EVENT_TIME_MANAGEMENT_ATTR = 'data-livewire-calendar-event-time-management-enabled';
 const TOTAL_CELLS = 42;
+const scrollSignatures = new WeakMap<HTMLElement, string>();
 
 let pendingDrag: {
     eventEl: HTMLElement;
@@ -53,6 +55,7 @@ let dragDropTarget: HTMLElement | null = null;
 let dragGhost: HTMLElement | null = null;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
+let livewireMorphHookRegistered = false;
 
 function getCalendarTimeZone(root: HTMLElement): string {
     const zone = root.getAttribute(TIME_ZONE_ATTR);
@@ -72,6 +75,63 @@ function getWire(root: HTMLElement): Wire | undefined {
     const wireId = wireEl.getAttribute('wire:id');
     if (!wireId) return undefined;
     return window.Livewire?.find(wireId);
+}
+
+function getTimeGridBody(root: HTMLElement): HTMLElement | null {
+    const view = root.getAttribute('data-livewire-calendar-view');
+
+    if (view === 'timeGridWeek' || view === 'timeGridDay' || view === 'resourceTimeGridDay') {
+        return root.querySelector<HTMLElement>('.lec-timegrid-body');
+    }
+
+    return null;
+}
+
+function getEarliestTimedEvent(root: HTMLElement): HTMLElement | null {
+    let earliestEvent: HTMLElement | null = null;
+
+    root.querySelectorAll<HTMLElement>('.lec-timed-event[data-start-min][data-event-id]').forEach((event) => {
+        if (!earliestEvent || Number(event.dataset.startMin) < Number(earliestEvent.dataset.startMin)) {
+            earliestEvent = event;
+        }
+    });
+
+    return earliestEvent;
+}
+
+function getScrollSignature(root: HTMLElement, event: HTMLElement): string {
+    return [
+        root.getAttribute('data-livewire-calendar-view') || '',
+        root.getAttribute('data-livewire-calendar-initial-date') || '',
+        event.dataset.eventId || '',
+        event.dataset.startMin || '',
+    ].join('|');
+}
+
+function scrollTimeGrid(root: HTMLElement): void {
+    const body = getTimeGridBody(root);
+    if (!body) return;
+
+    const event = getEarliestTimedEvent(root);
+    if (!event) return;
+
+    const signature = getScrollSignature(root, event);
+    if (scrollSignatures.get(root) === signature) return;
+
+    const slot = body.querySelector<HTMLElement>('.lec-timegrid-slot');
+    if (!slot) return;
+
+    const slotHeight = slot.getBoundingClientRect().height;
+    const startMinute = Number(event.dataset.startMin);
+
+    body.scrollTop = Math.max(0, (startMinute / 30) * slotHeight - (slotHeight * 2));
+    scrollSignatures.set(root, signature);
+}
+
+function scheduleTimeGridScroll(root: HTMLElement): void {
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => scrollTimeGrid(root));
+    });
 }
 
 function isDateOnlyIso(value: string): boolean {
@@ -649,14 +709,40 @@ document.addEventListener('click', (e) => {
 
 function initializeRoots(): void {
     document.querySelectorAll<HTMLElement>(ROOT_SELECTOR).forEach((root) => {
-        if (root.getAttribute(INITIALIZED_ATTR) === 'true') {
-            return;
+        if (root.getAttribute(INITIALIZED_ATTR) !== 'true') {
+            root.setAttribute(INITIALIZED_ATTR, 'true');
         }
-        root.setAttribute(INITIALIZED_ATTR, 'true');
+
+        scheduleTimeGridScroll(root);
     });
+}
+
+function registerLivewireMorphHook(): void {
+    if (livewireMorphHookRegistered || !window.Livewire) {
+        return;
+    }
+
+    window.Livewire.hook('morphed', ({ el }: { el: HTMLElement }) => {
+        const root = el.matches(ROOT_SELECTOR)
+            ? el
+            : el.querySelector<HTMLElement>(ROOT_SELECTOR);
+
+        if (root) {
+            scheduleTimeGridScroll(root);
+        }
+    });
+
+    livewireMorphHookRegistered = true;
 }
 
 initializeRoots();
 
 document.addEventListener('livewire:navigated', initializeRoots);
-document.addEventListener('livewire:initialized', initializeRoots);
+document.addEventListener('livewire:initialized', () => {
+    initializeRoots();
+    registerLivewireMorphHook();
+});
+document.addEventListener('livewire:init', () => {
+    registerLivewireMorphHook();
+});
+registerLivewireMorphHook();
